@@ -1,0 +1,16 @@
+<package>
+  <description brief="coax_vision">
+
+     coax_vision
+
+  </description>
+  <author>Yida Zhang</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/coax_vision</url>
+  <depend package="roscpp"/>
+  <depend package="camera1394"/>
+
+</package>
+
+
