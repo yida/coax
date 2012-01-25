@@ -6,14 +6,16 @@
 using namespace std;
 
 ros::NodeHandle *node;
-sensor_msgs::Image frame;
+sensor_msgs::Image input;
+sensor_msgs::Image output;
 coax_msgs::CoaxState coax;
+ros::Publisher PubImage;
 
 bool new_image = false;
 bool new_state = false;
 
 void image_callback(const sensor_msgs::ImageConstPtr& image) {
-  frame = *image;
+  input = *image;
   new_image = true;
   return;
 }
@@ -28,8 +30,20 @@ bool spin() {
   while (node->ok()) {
     ros::spinOnce();
     if (new_image) {
-      cout << "Image Time Stamp " << frame.header.stamp << ' ';
-      cout << frame.height << ' ' << frame.width << endl;  
+      output = input;
+      output.height = 24;
+      output.width = 32;
+      output.step = 32;
+	  int im_idx = 0;
+	  for (int i = 0; i < input.height; i+=20)
+		for (int j = 0; j < input.width; j+=20) {
+//		  cout << im_idx << ' ';
+		  output.data[im_idx] = output.data[i*input.step+j];
+		  im_idx ++;
+//	  	  cout << (unsigned short)output.data[i*input.step+j] << ' ';
+	  }
+//	  cout << "new image" << endl;
+      PubImage.publish(output);
       new_image = false;
     }
     if (new_state) {
@@ -49,6 +63,7 @@ int main(int argc, char **argv) {
   
   ros::Subscriber SubImage = n.subscribe("/camera/image_raw", 50, image_callback);
   ros::Subscriber SubState = n.subscribe("/coax_server/state",1000, coax_callback);
+  PubImage = n.advertise<sensor_msgs::Image>("image_resize",100);
 
   spin();
   return 0;
