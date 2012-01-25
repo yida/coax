@@ -9,7 +9,10 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/coax_vision</url>
   <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="coax_server"/>
   <depend package="camera1394"/>
+  <depend package="sensor_msgs"/>
 
 </package>
 
