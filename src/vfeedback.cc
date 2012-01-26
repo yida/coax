@@ -35,8 +35,8 @@ bool spin() {
       output.width = 32;
       output.step = 32;
 	  int im_idx = 0;
-	  for (int i = 0; i < input.height; i+=20)
-		for (int j = 0; j < input.width; j+=20) {
+	  for (unsigned int i = 0; i < input.height; i+=20)
+		for (unsigned int j = 0; j < input.width; j+=20) {
 //		  cout << im_idx << ' ';
 		  output.data[im_idx] = output.data[i*input.step+j];
 		  im_idx ++;
