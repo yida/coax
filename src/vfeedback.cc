@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ros/ros.h>
+#include <image_transport/image_transport.h>
 #include <sensor_msgs/Image.h>
 #include <coax_msgs/CoaxState.h>
 
@@ -9,7 +10,8 @@ ros::NodeHandle *node;
 sensor_msgs::Image input;
 sensor_msgs::Image output;
 coax_msgs::CoaxState coax;
-ros::Publisher PubImage;
+//ros::Publisher PubImage;
+image_transport::Publisher PubImage;
 
 bool new_image = false;
 bool new_state = false;
@@ -61,10 +63,10 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
   node = &n;
   
-  ros::Subscriber SubImage = n.subscribe("/camera/image_raw", 50, image_callback);
-  ros::Subscriber SubState = n.subscribe("/coax_server/state",1000, coax_callback);
-  PubImage = n.advertise<sensor_msgs::Image>("image_resize",100);
-
+  image_transport::ImageTransport it(*node);
+  image_transport::Subscriber SubImage = it.subscribe("/camera/image_raw",1, image_callback);
+  PubImage = it.advertise("image_resize",1);
+  
   spin();
   return 0;
 }
