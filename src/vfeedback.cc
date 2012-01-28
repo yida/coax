@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/Image.h>
@@ -6,67 +7,60 @@
 
 using namespace std;
 
-ros::NodeHandle *node;
-sensor_msgs::Image input;
-sensor_msgs::Image output;
-coax_msgs::CoaxState coax;
-//ros::Publisher PubImage;
-image_transport::Publisher PubImage;
+class ImageProc {
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber Sub_Image;
+  image_transport::Publisher Pub_Image;
 
-bool new_image = false;
-bool new_state = false;
-
-void image_callback(const sensor_msgs::ImageConstPtr& image) {
-  input = *image;
-  new_image = true;
-  return;
-}
-
-void coax_callback(const coax_msgs::CoaxStateConstPtr& state) {
-  coax = *state;
-  new_state = true;
-  return;
-}
-
-bool spin() {
-  while (node->ok()) {
-    ros::spinOnce();
-    if (new_image) {
-      output = input;
-      output.height = 24;
-      output.width = 32;
-      output.step = 32;
-	  int im_idx = 0;
-	  for (unsigned int i = 0; i < input.height; i+=20)
-		for (unsigned int j = 0; j < input.width; j+=20) {
-//		  cout << im_idx << ' ';
-		  output.data[im_idx] = output.data[i*input.step+j];
-		  im_idx ++;
-//	  	  cout << (unsigned short)output.data[i*input.step+j] << ' ';
-	  }
-//	  cout << "new image" << endl;
-      PubImage.publish(output);
-      new_image = false;
-    }
-    if (new_state) {
-      cout << "State Time Stamp " << coax.header.stamp << '.';
-      //cout << coax.header.stamp.nsecs << ' ';
-      cout << "Yaw " << coax.yaw << endl;
-      new_state = false;
-    }
+public:
+  ImageProc(): it_(nh_) {
+	Sub_Image = it_.subscribe("/camera/image_raw", 1 ,&ImageProc::proc, this);
+    Pub_Image = it_.advertise("image_out", 1);
   }
-  return true;
-}
+
+  ~ImageProc() {
+  }
+
+  void proc(const sensor_msgs::ImageConstPtr& msg) {
+	sensor_msgs::Image frame;
+	frame = *msg;
+	// Resize
+	unsigned int resize = 10; 
+	frame.height = msg->height / resize;
+    frame.width = msg->width / resize;
+    frame.step = msg->width / resize;
+	frame.data.resize(frame.height * frame.width);
+    unsigned int im_idx = 0;
+    for (unsigned int i = 0; i < msg->height; i += resize)
+	  for (unsigned int j = 0; j < msg->width; j += resize) {
+		frame.data[im_idx] = msg->data[i*msg->step+j];
+		im_idx ++;
+	}
+
+	// Inegral Image
+	vector <uint8_t> Integral_Image;
+	Integral_Image.resize(frame.height * frame.width);
+	for (unsigned int i = 0; i < frame.width; i ++)
+	  for (unsigned int j = 0; j < frame.height; j++) {
+		unsigned int Idx = j * frame.width + i;
+		unsigned int Up_Idx = (j-1) * frame.width + i;
+		unsigned int Left_Idx = j * frame.width + i - 1;
+		unsigned int UpLeft_Idx = (j-1) * frame.width + i - 1;
+		uint8_t Up = (j == 0)? 0 : frame.data[Up_Idx];
+		uint8_t Left = (i == 0)? 0 : frame.data[Left_Idx];
+		uint8_t UpLeft = ((i == 0) || (j == 0))? 0 : frame.data[UpLeft_Idx];
+		Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
+	  }
+
+	Pub_Image.publish(frame);
+  }
+};
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "vfeedback");
-  ros::NodeHandle n;
-  node = &n;
-  
-  image_transport::ImageTransport it(*node);
-  image_transport::Subscriber SubImage = it.subscribe("/camera/image_raw",1, image_callback);
-  PubImage = it.advertise("image_resize",1);
-  
-  spin();
+  ImageProc img;  
+
+  ros::spin();
   return 0;
 }
