@@ -1,11 +1,27 @@
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/Image.h>
 #include <coax_msgs/CoaxState.h>
 
 using namespace std;
+
+struct SymAxis {
+	unsigned short axis;
+	unsigned int value;
+};
+
+class CompareSymAxis {
+	public:
+	bool operator() (SymAxis& A1, SymAxis& A2) {
+		if (A1.value > A2.value)
+			return true;
+		else
+			return false;
+	}
+};
 
 class ImageProc {
   ros::NodeHandle nh_;
@@ -39,7 +55,7 @@ public:
 	}
 
 	// Inegral Image
-	vector <uint8_t> Integral_Image;
+	vector <uint32_t> Integral_Image;
 	Integral_Image.resize(frame.height * frame.width);
 	for (unsigned int i = 0; i < frame.width; i ++)
 	  for (unsigned int j = 0; j < frame.height; j++) {
@@ -53,6 +69,10 @@ public:
 		Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
 	  }
 
+	// Flip Searching Symmetric Axis
+	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
+	
+
 	Pub_Image.publish(frame);
   }
 };
@@ -64,3 +84,6 @@ int main(int argc, char **argv) {
   ros::spin();
   return 0;
 }
+
+
+
