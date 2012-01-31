@@ -5,11 +5,16 @@
 #include <sstream>
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
-#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
 #include <std_msgs/String.h>
 #include <coax_msgs/CoaxState.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 using namespace std;
+namespace enc = sensor_msgs::image_encodings;
 
 struct SymAxis {
 	unsigned short axis;
@@ -26,6 +31,8 @@ class CompareSymAxis {
 	}
 };
 
+static const char WINDOW[] = "Image window";
+
 class ImageProc {
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
@@ -39,9 +46,12 @@ public:
 		Sub_Image = it_.subscribe("/camera/image_raw", 1 ,&ImageProc::proc, this);
     Pub_Image = it_.advertise("image_out", 1);
 		Debug_Msgs = nh_.advertise<std_msgs::String>("debug",100);
+
+		cv::namedWindow(WINDOW);
   }
 
   ~ImageProc() {
+		cv::destroyWindow(WINDOW);
   }
 
   void proc(const sensor_msgs::ImageConstPtr& msg) {
@@ -83,29 +93,47 @@ public:
 		for (unsigned short i = 1; i < (frame.width - 1); i++) {
 			if ( i < frame.width/2 ) {
 				Left_Sum = Integral_Image[shift+(i-1)];
-				Right_Sum = Integral_Image[shift+2*i-1] - Integral_Image[shift+i];
+				Right_Sum = Integral_Image[shift+2*i] - Integral_Image[shift+i];
 			}
 			else {
-				Left_Sum = Integral_Image[shift+i-1] - Integral_Image[2*i-1-frame.width];
-				Right_Sum = Integral_Image[frame.width-1] - Integral_Image[i];
+				Left_Sum = Integral_Image[shift+i-1] - Integral_Image[shift+2*i-frame.width];
+				Right_Sum = Integral_Image[shift+frame.width-1] - Integral_Image[shift+i];
 			}
 			SymAxis temp_axis = {i,abs(Left_Sum-Right_Sum)};
 			Axis.push(temp_axis);
 		}
-		cout << "Update" << endl;	
-		std_msgs::String pub_msgs;
-		std::stringstream ss;
-		while (!Axis.empty()) {
-			SymAxis temp_axis = Axis.top();
-			ss << temp_axis.axis << ":" << temp_axis.value << " ";
-			Axis.pop();
+		SymAxis Best = Axis.top();
+		// cv windows to show symmetric line
+		cv_bridge::CvImagePtr cv_ptr;
+		try
+		{
+			cv_ptr = cv_bridge::toCvCopy(frame,enc::MONO8);
 		}
-	  ss << endl;
-		pub_msgs.data = ss.str();
-		ROS_INFO("%s",pub_msgs.data.c_str());
-		cout << ss << endl;	
-		Debug_Msgs.publish(pub_msgs);
-		Pub_Image.publish(frame);
+		catch (cv_bridge::Exception& e)
+		{
+			ROS_ERROR("cv_bridge exception: %s", e.what());
+			return;
+		}
+
+		cv::circle(cv_ptr->image, cv::Point(Best.axis,frame.height/2), 5, CV_RGB(255,0,0));
+		// Display labeled image
+//		cv::imshow(WINDOW, cv_ptr->image);
+//		cv::waitKey(3);
+		Pub_Image.publish(cv_ptr->toImageMsg());
+
+//		std_msgs::String pub_msgs;
+//		std::stringstream ss;
+//		while (!Axis.empty()) {
+//			SymAxis temp_axis = Axis.top();
+//			ss << temp_axis.axis << ":" << temp_axis.value << " ";
+//			Axis.pop();
+//		}
+//	  ss << endl;
+//		pub_msgs.data = ss.str();
+//		ROS_INFO("%s",pub_msgs.data.c_str());
+//		cout << ss << endl;	
+//		Debug_Msgs.publish(pub_msgs);
+//		Pub_Image.publish(frame);
 	}
 };
 
