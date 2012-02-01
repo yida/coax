@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include <cmath>
+#include <algorithm>
 #include <sstream>
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
@@ -24,7 +25,7 @@ struct SymAxis {
 class CompareSymAxis {
 	public:
 	bool operator() (SymAxis& A1, SymAxis& A2) {
-		if (A1.value > A2.value)
+		if (A1.value < A2.value)
 			return true;
 		else
 			return false;
@@ -87,21 +88,42 @@ public:
 
 		// Flip Searching Symmetric Axis
 		priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
-		unsigned int shift = (frame.height - 1) * frame.width;
-		double Left_Sum = 0;
-		double Right_Sum = 0;
-		for (unsigned short i = 1; i < (frame.width - 1); i++) {
-			if ( i < frame.width/2 ) {
-				Left_Sum = Integral_Image[shift+(i-1)];
-				Right_Sum = Integral_Image[shift+2*i] - Integral_Image[shift+i];
+		
+		// Integral Image Based, abs(sum(left)-sum(right))
+//		unsigned int shift = (frame.height - 1) * frame.width;
+//		double Left_Sum = 0;
+//		double Right_Sum = 0;
+//		for (unsigned short i = 1; i < (frame.width - 1); i++) {
+//			if ( i < frame.width/2 ) {
+//				Left_Sum = Integral_Image[shift+(i-1)];
+//				Right_Sum = Integral_Image[shift+2*i] - Integral_Image[shift+i];
+//			}
+//			else {
+//				Left_Sum = Integral_Image[shift+i-1] - Integral_Image[shift+2*i-frame.width];
+//				Right_Sum = Integral_Image[shift+frame.width-1] - Integral_Image[shift+i];
+//			}
+//			SymAxis temp_axis = {i,abs(Left_Sum-Right_Sum)};
+//			Axis.push(temp_axis);
+//		}
+
+		// Kernel based , L1
+		for (unsigned int cnt = 1; cnt < (frame.width - 1); cnt++) {
+			unsigned int width = min(cnt,frame.width-1-cnt);
+			double Sum_L1_Norm = 0;
+			for (unsigned int row = 0; row < frame.height; row++) {
+				unsigned int shift = row * frame.width;
+				for (unsigned int cur = 1; cur <= width; cur++) {
+					unsigned int Left_Cur = cnt - cur;
+					unsigned int Right_Cur = cnt + cur;
+					double L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
+					Sum_L1_Norm += L1_Norm;
+				}
 			}
-			else {
-				Left_Sum = Integral_Image[shift+i-1] - Integral_Image[shift+2*i-frame.width];
-				Right_Sum = Integral_Image[shift+frame.width-1] - Integral_Image[shift+i];
-			}
-			SymAxis temp_axis = {i,abs(Left_Sum-Right_Sum)};
+			SymAxis temp_axis = {cnt, Sum_L1_Norm};
 			Axis.push(temp_axis);
 		}
+		
+				
 		SymAxis Best = Axis.top();
 		// cv windows to show symmetric line
 		cv_bridge::CvImagePtr cv_ptr;
