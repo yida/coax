@@ -5,8 +5,8 @@ file = dir(strcat('images/*.jpg'));
 nfile = size(file,1);
 
 %%
-%for i = 1 : nfile
-for i = 783
+for i = 1 : nfile
+%for i = 170
 filename = file(i).name;
 img = imread(strcat('images/',filename));
 img = rgb2gray(img);
@@ -28,12 +28,15 @@ lrpeak = zeros(1,imgM);
 udpeak = zeros(1,imgM);
 stdpx = zeros(1,imgM);
 meanpx = zeros(1,imgM);
+diffpx = zeros(1,imgM);
 for ax = 2 : imgM-1
     leftLen = ax - 1;
     rightLen = imgM - ax;
     Len = min(leftLen,rightLen);
-    leftpart = img(:,ax-Len:ax);
-    rightpart = img(:,ax:ax+Len);   
+    leftpart = img(:,ax-Len:ax-1);
+    rightpart = img(:,ax+1:ax+Len);   
+    diffpx(ax) = abs(sum(sum(leftpart))-sum(sum(rightpart)));
+    %diffpx(ax) = abs(sum(sum(abs((leftpart-rightpart)))));
     stdpx(ax) = min(std(std(double(img(:,ax-min(10,Len):ax)))),std(std(double(img(:,ax:ax+min(10,Len))))));
     meanpx(ax) = min(mean(mean(double(img(:,ax-min(5,Len):ax)))),mean(mean(double(img(:,ax:ax+min(5,Len))))));
     %stdpx(ax) = min(std(std(double(leftpart))),std(std(double(rightpart))));
@@ -61,20 +64,20 @@ plot([I,I],[1,imgN],'LineWidth',2);
 %hold off;
 
 
-figure;
-subplot(4,1,1);
+figure(1);
+subplot(2,1,1);
 imagesc(img);
 colormap(gray);
-subplot(4,1,2);
+subplot(2,1,2);
 %plot(1:imgM,abs(udpeak));
 %subplot(4,1,3);
-plot(1:imgM,lrpeak);
+%plot(1:imgM,lrpeak);
 %subplot(4,1,4);
 %plot(1:imgM,lrpeak-abs(udpeak));
-subplot(4,1,3);
-plot(1:imgM,stdpx);
-subplot(4,1,4);
-plot(1:imgM,bench);
+%subplot(4,1,3);
+plot(1:imgM,diffpx);
+% subplot(4,1,4);
+% plot(1:imgM,bench);
 
 %toc
 
@@ -85,24 +88,24 @@ plot(1:imgM,bench);
 
 %%
 
-%subplot(3,1,1);
-figure;
-imagesc(img);
-colormap(gray);
-hold on;
-%hold on;
-line = zeros(2,120);
-nline = 1;
-for cnt = 2:119
- if (lrpeak(cnt-1) <= lrpeak(cnt)) && (lrpeak(cnt) >= lrpeak(cnt+1))
-     plot([cnt,cnt],[1,120],'LineWidth',2);
-     line(:,nline) = [cnt,lrpeak(cnt)];
-     nline = nline + 1;
- end
-end
-
-
-line = line(:,1:nline-1);
+% %subplot(3,1,1);
+% figure;
+% imagesc(img);
+% colormap(gray);
+% hold on;
+% %hold on;
+% line = zeros(2,120);
+% nline = 1;
+% for cnt = 2:119
+%  if (lrpeak(cnt-1) <= lrpeak(cnt)) && (lrpeak(cnt) >= lrpeak(cnt+1))
+%      plot([cnt,cnt],[1,120],'LineWidth',2);
+%      line(:,nline) = [cnt,lrpeak(cnt)];
+%      nline = nline + 1;
+%  end
+% end
+% 
+% 
+% line = line(:,1:nline-1);
 %line = line(:,2:end-1);
 %{
 [C,I] = max(line(2,:));

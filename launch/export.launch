@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="rosbag" type="rosbag" name="rosbag" args="play -d 2 /home/yida/bagfiles/2012-01-16-20-39-17.bag"/>
+  <node pkg="rosbag" type="rosbag" name="rosbag" args="play -d 2 /home/yida/2011-11-02-16-30-06-midstraight.bag"/>
   <node name="extract" pkg="image_view" type="extract_images" respawn="false" output="screen" cwd="node">
     <remap from="image" to="/camera/image_raw"/>
   </node>
