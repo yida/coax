@@ -47,11 +47,11 @@ public:
     Pub_Image = it_.advertise("image_out", 1);
 		Debug_Msgs = nh_.advertise<std_msgs::String>("debug",100);
 
-		cv::namedWindow(WINDOW);
+//		cv::namedWindow(WINDOW);
   }
 
   ~ImageProc() {
-		cv::destroyWindow(WINDOW);
+//		cv::destroyWindow(WINDOW);
   }
 
   void proc(const sensor_msgs::ImageConstPtr& msg) {
