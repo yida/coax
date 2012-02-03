@@ -73,16 +73,23 @@ public:
 
 		// Inegral Image
 		vector <uint32_t> Integral_Image;
+		unsigned int Idx = 0;          
+		unsigned int Up_Idx = 0;       
+		unsigned int Left_Idx = 0;     
+		unsigned int UpLeft_Idx = 0;   
+		uint8_t Up = 0;                
+		uint8_t Left = 0;              
+		uint8_t UpLeft = 0;            
 		Integral_Image.resize(frame.height * frame.width);
 		for (unsigned int i = 0; i < frame.width; i++)
 	  	for (unsigned int j = 0; j < frame.height; j++) {
-				unsigned int Idx = j * frame.width + i;
-				unsigned int Up_Idx = (j-1) * frame.width + i;
-				unsigned int Left_Idx = j * frame.width + i - 1;
-				unsigned int UpLeft_Idx = (j-1) * frame.width + i - 1;
-				uint8_t Up = (j == 0)? 0 : frame.data[Up_Idx];
-				uint8_t Left = (i == 0)? 0 : frame.data[Left_Idx];
-				uint8_t UpLeft = ((i == 0) || (j == 0))? 0 : frame.data[UpLeft_Idx];
+				Idx = j * frame.width + i;
+				Up_Idx = (j-1) * frame.width + i;
+				Left_Idx = j * frame.width + i - 1;
+				UpLeft_Idx = (j-1) * frame.width + i - 1;
+				Up = (j == 0)? 0 : frame.data[Up_Idx];
+				Left = (i == 0)? 0 : frame.data[Left_Idx];
+				UpLeft = ((i == 0) || (j == 0))? 0 : frame.data[UpLeft_Idx];
 				Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
 	  }
 
@@ -107,15 +114,21 @@ public:
 //		}
 
 		// Kernel based , L1
+		unsigned int width = 0;
+		double Sum_L1_Norm = 0;	
+		unsigned int shift = 0;
+		unsigned int Left_Cur = 0;
+		unsigned int Right_Cur = 0; 
+		double L1_Norm = 0;
 		for (unsigned int cnt = 1; cnt < (frame.width - 1); cnt++) {
-			unsigned int width = min(cnt,frame.width-1-cnt);
-			double Sum_L1_Norm = 0;
+			width = min(cnt,frame.width-1-cnt);
+			Sum_L1_Norm = 0;
 			for (unsigned int row = 0; row < frame.height; row++) {
-				unsigned int shift = row * frame.width;
+				shift = row * frame.width;
 				for (unsigned int cur = 1; cur <= width; cur++) {
-					unsigned int Left_Cur = cnt - cur;
-					unsigned int Right_Cur = cnt + cur;
-					double L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
+					Left_Cur = cnt - cur;
+					Right_Cur = cnt + cur;
+					L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
 					Sum_L1_Norm += L1_Norm;
 				}
 			}
