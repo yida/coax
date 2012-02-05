@@ -31,3 +31,5 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 set(CMAKE_CXX_FLAGS,"-02 -msoft-float")
 rosbuild_add_executable(vfeedback src/vfeedback.cc)
+rosbuild_add_executable(readstate src/read_state.cc)
+rosbuild_add_executable(read_all src/read_all.cc)
