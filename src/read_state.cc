@@ -5,51 +5,68 @@
 #include <boost/filesystem/path.hpp>
 #include <ros/ros.h>
 #include <coax_msgs/CoaxState.h>
+#include <image_transport/image_transport.h>
+#include <sensor_msgs/image_encodings.h>
 
 using namespace std;
 namespace fs = boost::filesystem;
+ros::NodeHandle *node;
 ofstream* output;
-coax_msgs::CoaxState msg;
+coax_msgs::CoaxState coax;
+sensor_msgs::Image frame;
+
+bool new_image = false;
+int cnt = 0;
+
+void imageCallback(const sensor_msgs::Image::ConstPtr& img) {
+			frame = *img;
+			cout << cnt << " " << setprecision(15) <<frame.header.stamp.toSec() << " " << coax.header.stamp.toSec() << endl;
+			*output << cnt << " ";
+			*output << setprecision(15) << frame.header.stamp.toSec() << " ";
+			*output << setprecision(15) << coax.header.stamp.toSec() << " ";
+			*output << (unsigned short)coax.mode.navigation << " ";
+			*output << (unsigned short)coax.mode.communication << " ";
+			*output << (unsigned short)coax.mode.oavoid << " ";
+			*output << (unsigned short)coax.mode.rollAxis << " ";
+			*output << (unsigned short)coax.mode.pitchAxis << " ";
+			*output << (unsigned short)coax.mode.yawAxis << " ";
+			*output << (unsigned short)coax.mode.altAxis << " ";
+			
+			*output << coax.roll << " ";
+			*output << coax.pitch << " ";
+			*output << coax.yaw << " ";
+			
+			*output << coax.gyro[0] << " " << coax.gyro[1] << " " << coax.gyro[2] << " ";
+			*output << coax.accel[0] << " " << coax.accel[1] << " " << coax.accel[2] << " ";
+		
+		  *output << coax.zrange << " ";
+			*output << coax.zfiltered << " ";
+			*output << coax.battery << " ";
+		
+			*output << coax.rcChannel[0] << " ";
+			*output << coax.rcChannel[1] << " ";
+			*output << coax.rcChannel[2] << " ";
+			*output << coax.rcChannel[3] << " ";
+			*output << coax.rcChannel[4] << " ";
+			*output << coax.rcChannel[5] << " ";
+			*output << coax.rcChannel[6] << " ";
+			*output << coax.rcChannel[7] << " ";	
+			*output << endl;
+			cnt ++;
+}
+
 void stateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
-	msg = *message;
-	cout << setprecision(15) << msg.header.stamp.toSec() << endl;
-
-	*output << setprecision(15) << msg.header.stamp.toSec() << " ";
-	*output << (unsigned short)msg.mode.navigation << " ";
-	*output << (unsigned short)msg.mode.communication << " ";
-	*output << (unsigned short)msg.mode.oavoid << " ";
-	*output << (unsigned short)msg.mode.rollAxis << " ";
-	*output << (unsigned short)msg.mode.pitchAxis << " ";
-	*output << (unsigned short)msg.mode.yawAxis << " ";
-	*output << (unsigned short)msg.mode.altAxis << " ";
-	
-	*output << msg.roll << " ";
-	*output << msg.pitch << " ";
-	*output << msg.yaw << " ";
-	
-	*output << msg.gyro[0] << " " << msg.gyro[1] << " " << msg.gyro[2] << " ";
-	*output << msg.accel[0] << " " << msg.accel[1] << " " << msg.accel[2] << " ";
-
-  *output << msg.zrange << " ";
-	*output << msg.zfiltered << " ";
-	*output << msg.battery << " ";
-
-	*output << msg.rcChannel[0] << " ";
-	*output << msg.rcChannel[1] << " ";
-	*output << msg.rcChannel[2] << " ";
-	*output << msg.rcChannel[3] << " ";
-	*output << msg.rcChannel[4] << " ";
-	*output << msg.rcChannel[5] << " ";
-	*output << msg.rcChannel[6] << " ";
-	*output << msg.rcChannel[7] << " ";
-	
-	*output << endl;
+	coax = *message;
+	return;
 }
 
 int main(int argc, char **argv) {
 	ros::init(argc, argv, "read_state");
 	ros::NodeHandle nh_;
-	ros::Subscriber sub = nh_.subscribe("state",200,stateCallback);
+	node = &nh_;
+	image_transport::ImageTransport it_(*node);
+	image_transport::Subscriber Sub_Image = it_.subscribe("/camera/image_raw",1,imageCallback);
+	ros::Subscriber sub = nh_.subscribe("/coax_server/state",200,stateCallback);
 
 	string directory;
 	nh_.param("directory", directory, string("data"));

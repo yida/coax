@@ -1,6 +1,6 @@
 %%
 close all;
-file = dir(strcat('images/*.jpg'));
+file = dir(strcat('image/fly2/*.jpg'));
 
 nfile = size(file,1);
 
@@ -8,7 +8,7 @@ nfile = size(file,1);
 for i = 1 : nfile
 %for i = 170
 filename = file(i).name;
-img = imread(strcat('images/',filename));
+img = imread(strcat('image/fly2/',filename));
 img = rgb2gray(img);
 %imshow(img);
 
@@ -19,7 +19,7 @@ side = 90;
 
 img = imresize(img,0.25);
 
-img = img(:,21:140);
+%img = img(:,21:140);
 [imgN,imgM] = size(img);
 %img(img>180) = 50;
 %imshow(img);
@@ -33,10 +33,10 @@ for ax = 2 : imgM-1
     leftLen = ax - 1;
     rightLen = imgM - ax;
     Len = min(leftLen,rightLen);
-    leftpart = img(:,ax-Len:ax-1);
+    leftpart = fliplr(img(:,ax-Len:ax-1));
     rightpart = img(:,ax+1:ax+Len);   
-    diffpx(ax) = abs(sum(sum(leftpart))-sum(sum(rightpart)));
-    %diffpx(ax) = abs(sum(sum(abs((leftpart-rightpart)))));
+    %diffpx(ax) = abs(sum(sum(leftpart))-sum(sum(rightpart)));
+    diffpx(ax) = sum(sum(abs(leftpart-rightpart)));
     stdpx(ax) = min(std(std(double(img(:,ax-min(10,Len):ax)))),std(std(double(img(:,ax:ax+min(10,Len))))));
     meanpx(ax) = min(mean(mean(double(img(:,ax-min(5,Len):ax)))),mean(mean(double(img(:,ax:ax+min(5,Len))))));
     %stdpx(ax) = min(std(std(double(leftpart))),std(std(double(rightpart))));
