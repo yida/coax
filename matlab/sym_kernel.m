@@ -1,21 +1,22 @@
 %%
 tic;
 
-file = dir(strcat('image/fly2/*.jpg'));
+file = dir(strcat('../images/*.jpg'));
 
 nfile = size(file,1);
 
 %%
+
 for cnt = 1 : nfile
 %for cnt = 200;
 filename = file(cnt).name;
-img = imread(strcat('image/fly2/',filename));
+img = imread(strcat('../images/',filename));
 img = rgb2gray(img);
 
 %%
 
 meanIMG = zeros(3,64);
-img = imresize(img,0.1);
+%img = imresize(img,0.1);
 [imgN,imgM] = size(img);
 % square size
 
@@ -92,7 +93,7 @@ end
 
 toc
 %}
-out = 'results5/';
+out = 'results/';
 print(fig,strcat(out,filename),'-djpeg','-r72');
 
 toc;
