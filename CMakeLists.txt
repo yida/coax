@@ -16,6 +16,14 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+set(COAXHOME $ENV{HOME}/Projects/coax/deploy)
+set(COAXTARGET linux)
+link_directories(${COAXHOME}/${COAXTARGET}/lib)
+include_directories(${COAXHOME}/${COAXTARGET}/include)
+
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
+
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
@@ -31,6 +39,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 set(CMAKE_CXX_FLAGS,"-02 -msoft-float")
 rosbuild_add_executable(vfeedback src/vfeedback.cc)
-rosbuild_add_executable(readstate src/read_state.cc)
-rosbuild_add_executable(read_all src/read_all.cc)
-rosbuild_add_executable(extract_images src/extract_images.cc)
+#rosbuild_add_executable(readstate src/read_state.cc)
+#rosbuild_add_executable(read_all src/read_all.cc)
+#rosbuild_add_executable(extract_images src/extract_images.cc)
+rosbuild_add_executable(CoaxVisionControl src/CoaxVisionControl.cc)
