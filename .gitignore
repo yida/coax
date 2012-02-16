@@ -7,7 +7,7 @@ msg_gen
 
 .DS_Store
 *~
-*.swap
+*.swp
 *.py
 *.asv
 *.o
