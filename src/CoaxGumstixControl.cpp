@@ -23,12 +23,12 @@ CoaxGumstixControl::CoaxGumstixControl(ros::NodeHandle & n)
 	coax_info_pub = n.advertise<geometry_msgs::Quaternion>("info",1);
 	coax_imu_pub = n.advertise<geometry_msgs::Quaternion>("imu",1);
 	control_mode_pub = n.advertise<geometry_msgs::Quaternion>("control_mode",1);
-//	raw_control_ipc_pub = n.advertise<geometry_msgs::Quaternion>("rawcontrol_ipc",1);
+	raw_control_ipc_pub = n.advertise<geometry_msgs::Quaternion>("rawcontrol_ipc",1);
 	
-//	coax_fmdes_sub = n.subscribe("fmdes", 1, &CoaxGumstixControl::coaxFMCallback, this, hints_fmdes.udp());
-//	coax_odom_sub = n.subscribe("odom", 1, &CoaxGumstixControl::coaxOdomCallback, this, hints_odom.udp());
+	coax_fmdes_sub = n.subscribe("fmdes", 1, &CoaxGumstixControl::coaxFMCallback, this, hints_fmdes.udp());
+	coax_odom_sub = n.subscribe("odom", 1, &CoaxGumstixControl::coaxOdomCallback, this, hints_odom.udp());
 	coax_state_sub = n.subscribe("state", 1, &CoaxGumstixControl::coaxStateCallback, this);
-//	matlab_nav_mode_sub = n.subscribe("nav_mode", 1, &CoaxGumstixControl::matlabNavModeCallback, this);
+	matlab_nav_mode_sub = n.subscribe("nav_mode", 1, &CoaxGumstixControl::matlabNavModeCallback, this);
 	
 	set_control_mode.push_back(n.advertiseService("set_control_mode", &CoaxGumstixControl::setControlMode, this));
 	
@@ -479,147 +479,147 @@ void CoaxGumstixControl::rawControlPublisher(unsigned int rate)
 	while(ros::ok())
 	{		
 		
-//		// compensate yaw angle with skybotix trafo -> yaw_est
-//		yaw_drift -= 0.0218534/rate; // compensate for constant drift rate
-//		while (imu_yaw-yaw_drift > M_PI) {
-//			yaw_drift += 2*M_PI;
-//		}
-//		while (imu_yaw-yaw_drift < -M_PI) {
-//			yaw_drift -= 2*M_PI;
-//		}
-//		yaw_est = imu_yaw - yaw_drift;
-//		
-//		// Compute Rb2w from imu euler angles here using imu_roll, imu_pitch, yaw_est
-//		Rb2w[0][0] = cos(imu_pitch)*cos(yaw_est);
-//		Rb2w[0][1] = -cos(imu_pitch)*sin(yaw_est);
-//		Rb2w[0][2] = sin(imu_pitch);
-//		Rb2w[1][0] = cos(imu_roll)*sin(yaw_est) + cos(yaw_est)*sin(imu_roll)*sin(imu_pitch);
-//		Rb2w[1][1] = cos(imu_roll)*cos(yaw_est) - sin(yaw_est)*sin(imu_roll)*sin(imu_pitch);
-//		Rb2w[1][2] = -cos(imu_pitch)*sin(imu_roll);
-//		Rb2w[2][0] = sin(imu_roll)*sin(yaw_est) - cos(yaw_est)*cos(imu_roll)*sin(imu_pitch);
-//		Rb2w[2][1] = sin(imu_roll)*cos(yaw_est) + sin(yaw_est)*cos(imu_roll)*sin(imu_pitch);
-//		Rb2w[2][2] = cos(imu_roll)*cos(imu_pitch);
-//		
-//		// body rates
-//		double p = imu_p;//message->twist.twist.angular.x;
-//		double q = imu_q;//message->twist.twist.angular.y;
-//		double r = imu_r;
-//		
-//		// Estimate stabilizer bar orientation
-//		double b_z_bardotz = 1/model_params.Tf_up*acos(prev_z_bar[2])*sqrt(prev_z_bar[0]*prev_z_bar[0] + prev_z_bar[1]*prev_z_bar[1]);
-//		double b_z_bardot[3] = {0,0,0};
-//		if (b_z_bardotz > 0){
-//			double temp = prev_z_bar[2]*b_z_bardotz/(prev_z_bar[0]*prev_z_bar[0]+prev_z_bar[1]*prev_z_bar[1]);
-//			b_z_bardot[0] = -prev_z_bar[0]*temp;
-//			b_z_bardot[1] = -prev_z_bar[1]*temp;
-//			b_z_bardot[2] = b_z_bardotz;
-//		}
-//		
-//		z_bar[0] = prev_z_bar[0] + (r*prev_z_bar[1] - q*prev_z_bar[2] + b_z_bardot[0])*delta_t;
-//		z_bar[1] = prev_z_bar[1] + (-r*prev_z_bar[0] + p*prev_z_bar[2] + b_z_bardot[1])*delta_t;
-//		z_bar[2] = prev_z_bar[2] + (q*prev_z_bar[0] - p*prev_z_bar[1] + b_z_bardot[2])*delta_t;
-//		
-//		double norm_z_bar = sqrt(z_bar[0]*z_bar[0] + z_bar[1]*z_bar[1] + z_bar[2]*z_bar[2]);
-//		z_bar[0] = z_bar[0]/norm_z_bar;
-//		z_bar[1] = z_bar[1]/norm_z_bar;
-//		z_bar[2] = z_bar[2]/norm_z_bar;
-//		
-//		prev_z_bar[0] = z_bar[0];
-//		prev_z_bar[1] = z_bar[1];
-//		prev_z_bar[2] = z_bar[2];
-//		
-//		double control[4] = {};
-//		double FM_des_damp[4];
-//		double FD_body[2];
-//		
-//		
-//		if (MATLAB_ACTIVE) {
-//			
-//			// roll/pitch damping
-//			FD_body[0] = control_params.K_pq_pitch*q;
-//			FD_body[1] = control_params.K_pq_roll*p;
-//			
-//			FM_des_damp[0] = FM_des[0] - Rb2w[0][0]*FD_body[0] - Rb2w[0][1]*FD_body[1];
-//			FM_des_damp[1] = FM_des[1] - Rb2w[1][0]*FD_body[0] - Rb2w[1][1]*FD_body[1];
-//			FM_des_damp[2] = FM_des[2];
-//			FM_des_damp[3] = FM_des[3];
-//			
-//			// Compute control inputs
-//			controlFunction(control, FM_des_damp, model_params);
-//			
-//			// Voltage compensation
-//			double volt_compUp = (12.22 - battery_voltage)*0.0279;
-//			double volt_compLo = (12.22 - battery_voltage)*0.0287;
-//			if (control[0] > 0.05 || control[1] > 0.05){
-//				control[0] = control[0] + volt_compUp;
-//				control[1] = control[1] + volt_compLo;
-//			}
-//			
-//			// set control commands
-//			setControls(control);			
-//		}
-//		
-//		if (odom_age < 50) {
-//			raw_control.motor1 = motor_up;
-//			raw_control.motor2 = motor_lo;
-//			raw_control.servo1 = servo_roll + roll_trim;
-//			raw_control.servo2 = servo_pitch + pitch_trim;
-//		} else {// no more new Odometry information from Vicon
-//			raw_control.motor1 = 0;
-//			raw_control.motor2 = 0;
-//			raw_control.servo1 = 0;
-//			raw_control.servo2 = 0;
-//		}
-//		
-//		raw_control_ipc.x = raw_control.motor1;
-//		raw_control_ipc.y = raw_control.motor2;
-//		raw_control_ipc.z = raw_control.servo1;
-//		raw_control_ipc.w = raw_control.servo2;
-//		
-//		raw_control_pub.publish(raw_control);
-////		raw_control_ipc_pub.publish(raw_control_ipc);
-//		
-////		if ((coax_state_age > 0.5*rate) && (coax_state_age <= 0.5*rate + 1)) {
-////			ROS_INFO("No more Data from CoaX Board!!!");
-////		}
-////
-////		if (matlab_FM_age > 20 && MATLAB_ACTIVE) { // Matlab not active anymore -> swit$
-////			MATLAB_ACTIVE = false;
-////			//ROS_INFO("Matlab is not active!!!");
-////		}
-////		if ((matlab_FM_age > 3) && (matlab_FM_age < 100)){ // For network testing
-////			ROS_INFO("Matlab value age [%d]",matlab_FM_age);
-////		}
-////		if ((odom_age > 3) && (odom_age < 100)){ // For network testing
-////			ROS_INFO("Vicon value age [%d]",odom_age);
-////		}
-//		
-//		if (coax_state_age < 1000) {
-//			coax_state_age += 1;
+		// compensate yaw angle with skybotix trafo -> yaw_est
+		yaw_drift -= 0.0218534/rate; // compensate for constant drift rate
+		while (imu_yaw-yaw_drift > M_PI) {
+			yaw_drift += 2*M_PI;
+		}
+		while (imu_yaw-yaw_drift < -M_PI) {
+			yaw_drift -= 2*M_PI;
+		}
+		yaw_est = imu_yaw - yaw_drift;
+		
+		// Compute Rb2w from imu euler angles here using imu_roll, imu_pitch, yaw_est
+		Rb2w[0][0] = cos(imu_pitch)*cos(yaw_est);
+		Rb2w[0][1] = -cos(imu_pitch)*sin(yaw_est);
+		Rb2w[0][2] = sin(imu_pitch);
+		Rb2w[1][0] = cos(imu_roll)*sin(yaw_est) + cos(yaw_est)*sin(imu_roll)*sin(imu_pitch);
+		Rb2w[1][1] = cos(imu_roll)*cos(yaw_est) - sin(yaw_est)*sin(imu_roll)*sin(imu_pitch);
+		Rb2w[1][2] = -cos(imu_pitch)*sin(imu_roll);
+		Rb2w[2][0] = sin(imu_roll)*sin(yaw_est) - cos(yaw_est)*cos(imu_roll)*sin(imu_pitch);
+		Rb2w[2][1] = sin(imu_roll)*cos(yaw_est) + sin(yaw_est)*cos(imu_roll)*sin(imu_pitch);
+		Rb2w[2][2] = cos(imu_roll)*cos(imu_pitch);
+		
+		// body rates
+		double p = imu_p;//message->twist.twist.angular.x;
+		double q = imu_q;//message->twist.twist.angular.y;
+		double r = imu_r;
+		
+		// Estimate stabilizer bar orientation
+		double b_z_bardotz = 1/model_params.Tf_up*acos(prev_z_bar[2])*sqrt(prev_z_bar[0]*prev_z_bar[0] + prev_z_bar[1]*prev_z_bar[1]);
+		double b_z_bardot[3] = {0,0,0};
+		if (b_z_bardotz > 0){
+			double temp = prev_z_bar[2]*b_z_bardotz/(prev_z_bar[0]*prev_z_bar[0]+prev_z_bar[1]*prev_z_bar[1]);
+			b_z_bardot[0] = -prev_z_bar[0]*temp;
+			b_z_bardot[1] = -prev_z_bar[1]*temp;
+			b_z_bardot[2] = b_z_bardotz;
+		}
+		
+		z_bar[0] = prev_z_bar[0] + (r*prev_z_bar[1] - q*prev_z_bar[2] + b_z_bardot[0])*delta_t;
+		z_bar[1] = prev_z_bar[1] + (-r*prev_z_bar[0] + p*prev_z_bar[2] + b_z_bardot[1])*delta_t;
+		z_bar[2] = prev_z_bar[2] + (q*prev_z_bar[0] - p*prev_z_bar[1] + b_z_bardot[2])*delta_t;
+		
+		double norm_z_bar = sqrt(z_bar[0]*z_bar[0] + z_bar[1]*z_bar[1] + z_bar[2]*z_bar[2]);
+		z_bar[0] = z_bar[0]/norm_z_bar;
+		z_bar[1] = z_bar[1]/norm_z_bar;
+		z_bar[2] = z_bar[2]/norm_z_bar;
+		
+		prev_z_bar[0] = z_bar[0];
+		prev_z_bar[1] = z_bar[1];
+		prev_z_bar[2] = z_bar[2];
+		
+		double control[4] = {};
+		double FM_des_damp[4];
+		double FD_body[2];
+		
+		
+		if (MATLAB_ACTIVE) {
+			
+			// roll/pitch damping
+			FD_body[0] = control_params.K_pq_pitch*q;
+			FD_body[1] = control_params.K_pq_roll*p;
+			
+			FM_des_damp[0] = FM_des[0] - Rb2w[0][0]*FD_body[0] - Rb2w[0][1]*FD_body[1];
+			FM_des_damp[1] = FM_des[1] - Rb2w[1][0]*FD_body[0] - Rb2w[1][1]*FD_body[1];
+			FM_des_damp[2] = FM_des[2];
+			FM_des_damp[3] = FM_des[3];
+			
+			// Compute control inputs
+			controlFunction(control, FM_des_damp, model_params);
+			
+			// Voltage compensation
+			double volt_compUp = (12.22 - battery_voltage)*0.0279;
+			double volt_compLo = (12.22 - battery_voltage)*0.0287;
+			if (control[0] > 0.05 || control[1] > 0.05){
+				control[0] = control[0] + volt_compUp;
+				control[1] = control[1] + volt_compLo;
+			}
+			
+			// set control commands
+			setControls(control);			
+		}
+		
+		if (odom_age < 50) {
+			raw_control.motor1 = motor_up;
+			raw_control.motor2 = motor_lo;
+			raw_control.servo1 = servo_roll + roll_trim;
+			raw_control.servo2 = servo_pitch + pitch_trim;
+		} else {// no more new Odometry information from Vicon
+			raw_control.motor1 = 0;
+			raw_control.motor2 = 0;
+			raw_control.servo1 = 0;
+			raw_control.servo2 = 0;
+		}
+		
+		raw_control_ipc.x = raw_control.motor1;
+		raw_control_ipc.y = raw_control.motor2;
+		raw_control_ipc.z = raw_control.servo1;
+		raw_control_ipc.w = raw_control.servo2;
+		
+		raw_control_pub.publish(raw_control);
+//		raw_control_ipc_pub.publish(raw_control_ipc);
+		
+//		if ((coax_state_age > 0.5*rate) && (coax_state_age <= 0.5*rate + 1)) {
+//			ROS_INFO("No more Data from CoaX Board!!!");
 //		}
 //
-////		if (matlab_FM_age < 1000) {
-////			matlab_FM_age += 1;
-////		}
-////		if (odom_age < 1000) {
-////			odom_age += 1;
-////		}
-////
-//		if (yaw_drift_count++ > 10) {
-//			YAW_DRIFT_COMP = true;
-//			yaw_drift_count = 0;
+//		if (matlab_FM_age > 20 && MATLAB_ACTIVE) { // Matlab not active anymore -> swit$
+//			MATLAB_ACTIVE = false;
+//			//ROS_INFO("Matlab is not active!!!");
 //		}
-//		
-//		// Estimate rotor speeds (do that here to have the same frequency as we apply inputs)
-//		double prev_Omega_up_des = model_params.rs_mup*prev_motor_up + model_params.rs_bup;
-//		double prev_Omega_lo_des = model_params.rs_mlo*prev_motor_lo + model_params.rs_blo;
-//		
-//		Omega_up = prev_Omega_up + 1/model_params.Tf_motup*(prev_Omega_up_des - prev_Omega_up)/rate;
-//		Omega_lo = prev_Omega_lo + 1/model_params.Tf_motlo*(prev_Omega_lo_des - prev_Omega_lo)/rate;
-//		prev_Omega_up = Omega_up;
-//		prev_Omega_lo = Omega_lo;
-//		prev_motor_up = raw_control.motor1;
-//		prev_motor_lo = raw_control.motor2;
+//		if ((matlab_FM_age > 3) && (matlab_FM_age < 100)){ // For network testing
+//			ROS_INFO("Matlab value age [%d]",matlab_FM_age);
+//		}
+//		if ((odom_age > 3) && (odom_age < 100)){ // For network testing
+//			ROS_INFO("Vicon value age [%d]",odom_age);
+//		}
+		
+		if (coax_state_age < 1000) {
+			coax_state_age += 1;
+		}
+
+//		if (matlab_FM_age < 1000) {
+//			matlab_FM_age += 1;
+//		}
+//		if (odom_age < 1000) {
+//			odom_age += 1;
+//		}
+//
+		if (yaw_drift_count++ > 10) {
+			YAW_DRIFT_COMP = true;
+			yaw_drift_count = 0;
+		}
+		
+		// Estimate rotor speeds (do that here to have the same frequency as we apply inputs)
+		double prev_Omega_up_des = model_params.rs_mup*prev_motor_up + model_params.rs_bup;
+		double prev_Omega_lo_des = model_params.rs_mlo*prev_motor_lo + model_params.rs_blo;
+		
+		Omega_up = prev_Omega_up + 1/model_params.Tf_motup*(prev_Omega_up_des - prev_Omega_up)/rate;
+		Omega_lo = prev_Omega_lo + 1/model_params.Tf_motlo*(prev_Omega_lo_des - prev_Omega_lo)/rate;
+		prev_Omega_up = Omega_up;
+		prev_Omega_lo = Omega_lo;
+		prev_motor_up = raw_control.motor1;
+		prev_motor_lo = raw_control.motor2;
 		
 		ros::spinOnce();
 		loop_rate.sleep();
@@ -885,17 +885,18 @@ int main(int argc, char** argv)
 	api.configureComm(comm_freq, SBS_MODES | SBS_BATTERY | SBS_GYRO | SBS_RPY); // configuration of sending back data from CoaX
 	api.setTimeout(500, 5000);
 	
+	ROS_INFO("Setup Configuration and setTimeOut");
 	int CoaX;
 	n.param("CoaX", CoaX, 56);
 	api.SetPlatform(CoaX);
-	
+	ROS_INFO("Setup Platform");	
 	api.load_model_params(n);
 	
 	api.load_control_params(n);
-	
+	ROS_INFO("load params");
 	int pub_freq;
 	n.param("pub_freq", pub_freq, 100);
-	
+	ROS_INFO("Set Publish frequency");
 	api.rawControlPublisher(pub_freq);
 
 	return(0);
