@@ -1,5 +1,4 @@
 
-
 How to install ros electric on gumstix with ubuntu 10.04
 
 1. Following Preparing Steps on "Installing on Ubuntu from Source" http://www.ros.org/wiki/electric/Installation/Ubuntu/Source
@@ -14,18 +13,31 @@ How to install ros electric on gumstix with ubuntu 10.04
 
 How to compile camera1394
 
-svn co https://code.ros.org/svn/ros-pkg/stacks/camera1394/trunk/ camera1394
+1. svn co https://code.ros.org/svn/ros-pkg/stacks/camera1394/trunk/ camera1394
+
+2. Checkout Dependencies
+image_common: svn co https://code.ros.org/svn/ros-pkg/stacks/image_common/tags/electric/
+diagnostics: svn co https://code.ros.org/svn/ros-pkg/stacks/diagnostics/trunk/
 
 
-libtinyxml
+How to install libtinyxml for gumstix
 
 http://libtinyxml.googlecode.com/files/libtinyxml-src.zip
 
-How to install yaml-cpp
+How to install yaml-cpp for gumstix
 
-http://yaml-cpp.googlecode.com/files/yaml-cpp-0.3.0.tar.gz
-mkdir build && cd build
-cmake -DBUILD_SHARED_LIBS=ON ..
-make && sudo make install
+1. http://yaml-cpp.googlecode.com/files/yaml-cpp-0.3.0.tar.gz
+2. Compile and install 
+	>> mkdir build && cd build
+	>> cmake -DCMAKE_INSTALL_PREFIX=/usr -D BUILD_SHARED_LIBS=ON ..
+	>> make && sudo make install
 
+How to install opencv for gumstix
+
+1. Download latest version http://sourceforge.net/projects/opencvlibrary/
+
+2. compile 
+	>> mkdir build && cd build
+	>> cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D BUILD_WITH_DEBUG_INFO=OFF -D BUILD_TESTS=OFF -D WITH_FFMPEG=OFF -D WITH_GTK=OFF -D WITH_PVAPI=OFF -D WITH_CUDA=OFF -D BUILD_DOCS=OFF -D BUILD_NEW_PYTHON_SUPPORT=OFF 
+	>> make && sudo make install
 
