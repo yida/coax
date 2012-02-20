@@ -1,0 +1,31 @@
+
+
+How to install ros electric on gumstix with ubuntu 10.04
+
+1. Following Preparing Steps on "Installing on Ubuntu from Source" http://www.ros.org/wiki/electric/Installation/Ubuntu/Source
+
+2. Get Source File of ROS-Base: (Bare Bones) ROS package, build, and communication libraries.
+
+3. Stop compiling ros and ros_comm after bootstrap
+
+4. Apply patch to ros serialization https://code.ros.org/trac/ros/attachment/ticket/2883/serialization_memcpy_instead_of_reinterpret.diff
+
+5. rosmake --rosdep-install ros ros_comm
+
+How to compile camera1394
+
+svn co https://code.ros.org/svn/ros-pkg/stacks/camera1394/trunk/ camera1394
+
+
+libtinyxml
+
+http://libtinyxml.googlecode.com/files/libtinyxml-src.zip
+
+How to install yaml-cpp
+
+http://yaml-cpp.googlecode.com/files/yaml-cpp-0.3.0.tar.gz
+mkdir build && cd build
+cmake -DBUILD_SHARED_LIBS=ON ..
+make && sudo make install
+
+
