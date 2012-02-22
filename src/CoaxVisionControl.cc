@@ -11,42 +11,43 @@
 #include <com/sbapi.h>
 #include <CoaxVisionControl.h>
 
-CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node):
-	LOW_POWER_DETECTED(false),
-	coax_nav_mode(0),
-	battery_voltage(12.22),
-	imu_y(0.0),
-	imu_r(0.0),
-	imu_p(0.0),
-	range_al(0.0),
-	rc_th(0.0),
-	rc_y(0.0),
-	rc_r(0.0),
-	rc_p(0.0),
-	rc_trim_th(0.0),
-	rc_trim_y(0.0),
-	rc_trim_r(0.0),
-	rc_trim_p(0.0),
-	img_th(0.0),
-	img_y(0.0),
-	img_r(0.0),
-	img_p(0.0),
-	gyro_ch1(0.0),
-	gyro_ch2(0.0),
-	gyro_ch3(0.0),
-	accel_x(0.0),
-	accel_y(0.0),
-	accel_z(0.0)		 
+CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
+:reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
+,configure_comm(node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm"))
+,configure_control(node.serviceClient<coax_msgs::CoaxConfigureControl>("configure_control"))
+,set_timeout(node.serviceClient<coax_msgs::CoaxSetTimeout>("set_timeout"))
+
+,coax_state_sub(node.subscribe("state",1, &CoaxVisionControl::coaxStateCallback, this))
+
+,raw_control_pub(node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1))
+
+,LOW_POWER_DETECTED(false)
+,coax_nav_mode(0)
+,battery_voltage(12.22)
+,imu_y(0.0)
+,imu_r(0.0)
+,imu_p(0.0)
+,range_al(0.0)
+,rc_th(0.0)
+,rc_y(0.0)
+,rc_r(0.0)
+,rc_p(0.0)
+,rc_trim_th(0.0)
+,rc_trim_y(0.0)
+,rc_trim_r(0.0)
+,rc_trim_p(0.0)
+,img_th(0.0)
+,img_y(0.0)
+,img_r(0.0)
+,img_p(0.0)
+,gyro_ch1(0.0)
+,gyro_ch2(0.0)
+,gyro_ch3(0.0)
+,accel_x(0.0)
+,accel_y(0.0)
+,accel_z(0.0)		 
 {
-	reach_nav_state = node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state");
-	configure_comm = node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm");
-	configure_control = node.serviceClient<coax_msgs::CoaxConfigureControl>("configure_control");
-	set_timeout = node.serviceClient<coax_msgs::CoaxSetTimeout>("set_timeout");
-
-	coax_state_sub = node.subscribe("state",1, &CoaxVisionControl::coaxStateCallback, this);
-
-	raw_control_pub = node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1);
-
+	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 }
 
 CoaxVisionControl::~CoaxVisionControl()
@@ -96,6 +97,22 @@ bool CoaxVisionControl::setTimeout(unsigned int control_timeout_ms, unsigned int
 	srv.request.watchdog_timeout_ms = watchdog_timeout_ms;
 	set_timeout.call(srv);
 	
+	return 0;
+}
+//==============
+//ServiceServer
+//==============
+bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out)
+{
+	out.result = 0;
+	
+	switch (req.mode) 
+	{
+		case SB_NAV_STOP:
+			break;
+		case SB_NAV_IDLE:
+			break;
+	}
 	return 0;
 }
 

@@ -29,6 +29,8 @@
 			<remap from="/coax_vision_control/configure_control" to="/configure_control"/>
       <remap from="/coax_vision_control/set_timeout" to="/set_timeout"/>
 
+			<remap from="/coax_vision_control/set_nav_mode" to="/set_nav_mode"/>
+
       <param name="frequency" value="100"/>
 <!--
       <rosparam file="$(find coax_vision_control)/config/coax_parameters.yaml"/>

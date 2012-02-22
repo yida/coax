@@ -11,8 +11,11 @@
 #include <coax_msgs/CoaxConfigureComm.h>
 #include <coax_msgs/CoaxSetTimeout.h>
 
+#include <coax_vision/SetNavMode.h>
 //#include <coax_vision/SetControlMode.h>
 //#include <coax_vision/CoaxFMdes.h>
+
+using namespace std;
 
 struct SymAxis 
 {
@@ -57,8 +60,11 @@ public:
 	bool configureComm(int frequency, int contents);
 	bool configureControl(unsigned int rollMode, unsigned int pitchMode, unsigned int yawMode, unsigned int altitudeMode);
 	bool setTimeout(unsigned int control_timeout_ms, unsigned int watchdog_timeout_ms);
+
+	bool setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out);
 	
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
+
 	void rawControlPublisher(unsigned int rate);
 
 
@@ -70,7 +76,10 @@ private:
 	ros::ServiceClient set_timeout;
 	
 	ros::Subscriber coax_state_sub;
+
 	ros::Publisher raw_control_pub;
+
+	std::vector<ros::ServiceServer> set_nav_mode;
 
 	bool LOW_POWER_DETECTED;
 
@@ -107,6 +116,5 @@ private:
 
 };
 
-using namespace std;
 
 #endif
