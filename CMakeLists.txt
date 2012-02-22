@@ -25,9 +25,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 
 #uncomment if you have defined messages
-rosbuild_genmsg()
+#rosbuild_genmsg()
 #uncomment if you have defined services
-rosbuild_gensrv()
+#rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -42,5 +42,5 @@ set(CMAKE_CXX_FLAGS,"-02 -msoft-float")
 #rosbuild_add_executable(readstate src/read_state.cc)
 #rosbuild_add_executable(read_all src/read_all.cc)
 #rosbuild_add_executable(extract_images src/extract_images.cc)
-#rosbuild_add_executable(CoaxVisionControl src/CoaxVisionControl.cc src/ImageProc.cc) 
-rosbuild_add_executable(coax_gumstix_control src/CoaxGumstixControl.cpp)
+rosbuild_add_executable(CoaxVisionControl src/CoaxVisionControl.cc src/ImageProc.cc) 
+#rosbuild_add_executable(coax_gumstix_control src/CoaxGumstixControl.cpp)

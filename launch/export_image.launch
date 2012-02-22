@@ -2,6 +2,6 @@
   <arg name="bagname" />
   <node pkg="rosbag" type="rosbag" name="rosbag" args="play -d 2 $(arg bagname)"/>
   <node name="extract" pkg="coax_vision" type="extract_images" respawn="false" output="screen" cwd="node">
-    <remap from="image" to="/camera/image_raw"/>
+    <remap from="image" to="/camera/image_color"/>
   </node>
 </launch>
