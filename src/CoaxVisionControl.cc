@@ -23,6 +23,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 
 ,LOW_POWER_DETECTED(false)
 ,coax_nav_mode(0)
+,coax_control_mode(0)
 ,battery_voltage(12.22)
 ,imu_y(0.0)
 ,imu_r(0.0)
@@ -48,6 +49,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,accel_z(0.0)		 
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
+	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
 }
 
 CoaxVisionControl::~CoaxVisionControl()
@@ -115,6 +117,17 @@ bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_v
 	}
 	return 0;
 }
+
+bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out)
+{
+	out.result = 0;
+	
+//	switch (req.mode) 
+//	{
+//	}
+	return 0;
+}
+
 
 //==============
 // Subscriber
