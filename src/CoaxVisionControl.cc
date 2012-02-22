@@ -85,7 +85,7 @@ bool CoaxVisionControl::configureControl(unsigned int rollMode, unsigned int pit
 	srv.request.yawMode = yawMode;
 	srv.request.altitudeMode = altitudeMode;
 	configure_control.call(srv);
-	
+	//ROS_INFO("called configure control");
 	return 0;
 }
 
@@ -150,7 +150,7 @@ void CoaxVisionControl::rawControlPublisher(unsigned int rate)
 		raw_control.motor2 = 0;
 		raw_control.servo1 = 0;
 		raw_control.servo2 = 0;
-		raw_control_pub.publish(raw_control);
+		//raw_control_pub.publish(raw_control);
 
 		ros::spinOnce();
 		loop_rate.sleep();
@@ -168,7 +168,12 @@ int main(int argc, char **argv) {
 	ros::Duration(1.5).sleep(); 
 
 	control.configureComm(100, SBS_MODES | SBS_BATTERY | SBS_GYRO | SBS_ACCEL | SBS_CHANNELS | SBS_RPY | SBS_HRANGES);
+	// control.setTimeout(500, 5000);
+
+	control.configureControl(SB_CTRL_MANUAL, SB_CTRL_MANUAL, SB_CTRL_MANUAL, SB_CTRL_MANUAL);
 	control.setTimeout(500, 5000);
+
+	ROS_INFO("Initially Setup comm and control");
 
 	int frequency = 100;
 	control.rawControlPublisher(frequency);

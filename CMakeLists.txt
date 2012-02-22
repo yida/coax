@@ -37,7 +37,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-set(CMAKE_CXX_FLAGS,"-02 -msoft-float")
+#set(CMAKE_CXX_FLAGS,"-02 -msoft-float")
 #rosbuild_add_executable(vfeedback src/vfeedback.cc)
 #rosbuild_add_executable(readstate src/read_state.cc)
 #rosbuild_add_executable(read_all src/read_all.cc)
