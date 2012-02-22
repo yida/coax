@@ -122,9 +122,17 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 {
 	out.result = 0;
 	
-//	switch (req.mode) 
-//	{
-//	}
+	switch (req.mode) 
+	{
+		case 1:
+			reachNavState(SB_NAV_IDLE,0.5);
+			ros::Duration(0.5).sleep();
+			reachNavState(SB_NAV_HOVER,0.5);
+			ros::Duration(0.5).sleep();
+			reachNavState(SB_NAV_CTRLLED,0.5);
+			ros::Duration(0.5).sleep();
+			break;
+	}
 	return 0;
 }
 

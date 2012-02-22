@@ -4,7 +4,7 @@
           name="coax"
           type="coax_server"
 	  output="screen"
-          args="/dev/ttyS0:1">
+          args="/dev/ttyS0">
       <remap from="/coax_server/state" to="/state"/>
 
       <remap from="/coax_server/control" to="/control"/>
