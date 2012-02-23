@@ -20,6 +20,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,coax_state_sub(node.subscribe("state",1, &CoaxVisionControl::coaxStateCallback, this))
 
 ,raw_control_pub(node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1))
+,vision_control_pub(node.advertise<coax_msgs::CoaxControl>("visioncontrol",1))
 
 ,LOW_POWER_DETECTED(false)
 ,coax_nav_mode(0)
@@ -176,12 +177,12 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 
 }
 
-void CoaxVisionControl::rawControlPublisher(unsigned int rate)
+void CoaxVisionControl::controlPublisher(unsigned int rate)
 {
 	ros::Rate loop_rate(rate);
 
 	coax_msgs::CoaxRawControl raw_control;
-
+	coax_msgs::CoaxControl vision_control;
 	while(ros::ok())
 	{
 		raw_control.motor1 = 0;
@@ -189,6 +190,13 @@ void CoaxVisionControl::rawControlPublisher(unsigned int rate)
 		raw_control.servo1 = 0;
 		raw_control.servo2 = 0;
 		//raw_control_pub.publish(raw_control);
+		
+		vision_control.roll = rc_r;
+		vision_control.pitch = rc_p;
+		vision_control.yaw = rc_y;
+		vision_control.altitude = rc_th;
+
+		vision_control_pub.publish(vision_control);
 
 		ros::spinOnce();
 		loop_rate.sleep();
@@ -214,7 +222,7 @@ int main(int argc, char **argv) {
 	ROS_INFO("Initially Setup comm and control");
 
 	int frequency = 100;
-	control.rawControlPublisher(frequency);
+	control.controlPublisher(frequency);
 
   ros::spin();
   return 0;

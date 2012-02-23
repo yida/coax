@@ -7,6 +7,7 @@
 
 #include <coax_msgs/CoaxState.h>
 #include <coax_msgs/CoaxRawControl.h>
+#include <coax_msgs/CoaxControl.h>
 #include <coax_msgs/CoaxReachNavState.h>
 #include <coax_msgs/CoaxConfigureComm.h>
 #include <coax_msgs/CoaxSetTimeout.h>
@@ -66,7 +67,7 @@ public:
 
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
 
-	void rawControlPublisher(unsigned int rate);
+	void controlPublisher(unsigned int rate);
 
 
 
@@ -79,6 +80,7 @@ private:
 	ros::Subscriber coax_state_sub;
 
 	ros::Publisher raw_control_pub;
+	ros::Publisher vision_control_pub;
 
 	vector<ros::ServiceServer> set_nav_mode;
 	vector<ros::ServiceServer> set_control_mode;
