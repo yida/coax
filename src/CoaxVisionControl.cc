@@ -23,8 +23,14 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,vision_control_pub(node.advertise<coax_msgs::CoaxControl>("visioncontrol",1))
 
 ,LOW_POWER_DETECTED(false)
+,CONTROL_MODE(CONTROL_LANDED)
+,FIRST_START(false)
+,FIRST_LANDING(false)
+,FIRST_HOVER(false)
 ,coax_nav_mode(0)
 ,coax_control_mode(0)
+,coax_state_age(0)
+,raw_control_age(0)
 ,battery_voltage(12.22)
 ,imu_y(0.0)
 ,imu_r(0.0)
@@ -47,7 +53,13 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,gyro_ch3(0.0)
 ,accel_x(0.0)
 ,accel_y(0.0)
-,accel_z(0.0)		 
+,accel_z(0.0)
+,motor_up(0)
+,motor_lo(0)
+,servo_roll(0)
+,servo_pitch(0)		 
+,roll_trim(0)
+,pitch_trim(0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -126,15 +138,57 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 	switch (req.mode) 
 	{
 		case 1:
-			reachNavState(SB_NAV_IDLE,0.5);
-			ros::Duration(0.5).sleep();
-			reachNavState(SB_NAV_HOVER,0.5);
-			ros::Duration(0.5).sleep();
-			reachNavState(SB_NAV_CTRLLED,0.5);
-			ros::Duration(0.5).sleep();
+			if (CONTROL_MODE == CONTROL_LANDED){
+				if (battery_voltage > 11) {
+					if (coax_nav_mode != SB_NAV_RAW) {
+						if (coax_nav_mode != SB_NAV_STOP) {
+							reachNavState(SB_NAV_STOP, 0.5);
+							ros::Duration(0.5).sleep(); // make sure CoaX is in SB_NAV_STOP mode
+						}
+						reachNavState(SB_NAV_RAW, 0.5);
+					}
+//					// set initial trim
+//					if (COAX == 56) {
+//						roll_trim = 0.0285;
+//						pitch_trim = 0.0921;
+//					} else {
+//						roll_trim = 0;
+//						pitch_trim = 0;
+//					}
+					// switch to start procedure
+					CONTROL_MODE = CONTROL_START;
+//					FIRST_START = true;
+				} else {
+					ROS_INFO("Battery Low!!! (%f V) Start denied",battery_voltage);
+					LOW_POWER_DETECTED = true;
+					out.result = -1;
+				}
+			} else {
+				ROS_INFO("Start can only be executed from mode CONTROL_LANDED");
+				out.result = -1;
+			}
+
 			break;
+
+		case 9:
+			motor_up = 0;
+			motor_lo = 0;
+			servo_roll = 0;
+			servo_pitch = 0;
+			roll_trim = 0;
+			pitch_trim = 0;
+			
+			reachNavState(SB_NAV_STOP, 0.5);
+			
+			CONTROL_MODE = CONTROL_LANDED;
+			break;
+		
+		default:
+			ROS_INFO("Non existent control mode request!");
+			out.result = -1;		
+
 	}
-	return 0;
+	return true;
 }
 
 
@@ -189,14 +243,14 @@ void CoaxVisionControl::controlPublisher(unsigned int rate)
 		raw_control.motor2 = 0;
 		raw_control.servo1 = 0;
 		raw_control.servo2 = 0;
-		//raw_control_pub.publish(raw_control);
+		raw_control_pub.publish(raw_control);
 		
-		vision_control.roll = rc_r;
-		vision_control.pitch = rc_p;
-		vision_control.yaw = rc_y;
-		vision_control.altitude = rc_th;
-
-		vision_control_pub.publish(vision_control);
+//		vision_control.roll = rc_r;
+//		vision_control.pitch = rc_p;
+//		vision_control.yaw = rc_y;
+//		vision_control.altitude = rc_th;
+//
+//		vision_control_pub.publish(vision_control);
 
 		ros::spinOnce();
 		loop_rate.sleep();
