@@ -67,15 +67,15 @@ public:
 
 	bool reachNavState(int des_state, float timeout);
 	bool configureComm(int frequency, int contents);
-	bool configureControl(unsigned int rollMode, unsigned int pitchMode, unsigned int yawMode, unsigned int altitudeMode);
-	bool setTimeout(unsigned int control_timeout_ms, unsigned int watchdog_timeout_ms);
+	bool configureControl(size_t rollMode, size_t pitchMode, size_t yawMode, size_t altitudeMode);
+	bool setTimeout(size_t control_timeout_ms, size_t watchdog_timeout_ms);
 
 	bool setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out);
 	bool setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out);
 
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
 
-	void controlPublisher(unsigned int rate);
+	void controlPublisher(size_t rate);
 	
 	bool setRawControl(double motor_up,double motor_lo, double servo_ro,double servo_pi);
 

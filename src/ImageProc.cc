@@ -40,30 +40,30 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	sensor_msgs::Image frame;
 	frame = *msg;
 	// Resize
-//	unsigned int resize = 10; 
+//	size_t resize = 10; 
 //	frame.height = msg->height / resize;
 //  frame.width = msg->width / resize;
 //  frame.step = msg->width / resize;
 //	frame.data.resize(frame.height * frame.width);
-//  unsigned int im_idx = 0;
-//  for (unsigned int i = 0; i < msg->height; i += resize)
-//	  for (unsigned int j = 0; j < msg->width; j += resize) {
+//  size_t im_idx = 0;
+//  for (size_t i = 0; i < msg->height; i += resize)
+//	  for (size_t j = 0; j < msg->width; j += resize) {
 //			frame.data[im_idx] = msg->data[i*msg->step+j];
 //			im_idx ++;
 //		}
 
 	// Inegral Image
 	vector <uint32_t> Integral_Image;
-	unsigned int Idx = 0;          
-	unsigned int Up_Idx = 0;       
-	unsigned int Left_Idx = 0;     
-	unsigned int UpLeft_Idx = 0;   
+	size_t Idx = 0;          
+	size_t Up_Idx = 0;       
+	size_t Left_Idx = 0;     
+	size_t UpLeft_Idx = 0;   
 	uint8_t Up = 0;                
 	uint8_t Left = 0;              
 	uint8_t UpLeft = 0;            
 	Integral_Image.resize(frame.height * frame.width);
-	for (unsigned int i = 0; i < frame.width; i++)
-  	for (unsigned int j = 0; j < frame.height; j++) {
+	for (size_t i = 0; i < frame.width; i++)
+  	for (size_t j = 0; j < frame.height; j++) {
 			Idx = j * frame.width + i;
 			Up_Idx = (j-1) * frame.width + i;
 			Left_Idx = j * frame.width + i - 1;
@@ -78,7 +78,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
 	
 	// Integral Image Based, abs(sum(left)-sum(right))
-//	unsigned int shift = (frame.height - 1) * frame.width;
+//	size_t shift = (frame.height - 1) * frame.width;
 //	double Left_Sum = 0;
 //	double Right_Sum = 0;
 //	for (unsigned short i = 1; i < (frame.width - 1); i++) {
@@ -95,18 +95,18 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 //	}
 
 	// Kernel based , L1
-	unsigned int width = 0;
+	size_t width = 0;
 	double Sum_L1_Norm = 0;	
-	unsigned int shift = 0;
-	unsigned int Left_Cur = 0;
-	unsigned int Right_Cur = 0; 
+	size_t shift = 0;
+	size_t Left_Cur = 0;
+	size_t Right_Cur = 0; 
 	double L1_Norm = 0;
-	for (unsigned int cnt = 1; cnt < (frame.width - 1); cnt++) {
+	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
 		width = min(cnt,frame.width-1-cnt);
 		Sum_L1_Norm = 0;
-		for (unsigned int row = 0; row < frame.height; row++) {
+		for (size_t row = 0; row < frame.height; row++) {
 			shift = row * frame.width;
-			for (unsigned int cur = 1; cur <= width; cur++) {
+			for (size_t cur = 1; cur <= width; cur++) {
 				Left_Cur = cnt - cur;
 				Right_Cur = cnt + cur;
 				L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
