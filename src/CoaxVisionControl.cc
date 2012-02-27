@@ -93,7 +93,7 @@ bool CoaxVisionControl::configureComm(int frequency, int contents)
 	return 0;
 }
 
-bool CoaxVisionControl::configureControl(unsigned int rollMode, unsigned int pitchMode, unsigned int yawMode, unsigned int altitudeMode)
+bool CoaxVisionControl::configureControl(size_t rollMode, size_t pitchMode, size_t yawMode, size_t altitudeMode)
 {
 	coax_msgs::CoaxConfigureControl srv;
 	srv.request.rollMode = rollMode;
@@ -105,7 +105,7 @@ bool CoaxVisionControl::configureControl(unsigned int rollMode, unsigned int pit
 	return 0;
 }
 
-bool CoaxVisionControl::setTimeout(unsigned int control_timeout_ms, unsigned int watchdog_timeout_ms)
+bool CoaxVisionControl::setTimeout(size_t control_timeout_ms, size_t watchdog_timeout_ms)
 {
 	coax_msgs::CoaxSetTimeout srv;
 	srv.request.control_timeout_ms = control_timeout_ms;
@@ -231,7 +231,7 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 
 }
 
-void CoaxVisionControl::controlPublisher(unsigned int rate)
+void CoaxVisionControl::controlPublisher(size_t rate)
 {
 	ros::Rate loop_rate(rate);
 
