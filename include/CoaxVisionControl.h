@@ -47,12 +47,17 @@ public:
   ~ImageProc();
 
 private:
-  void proc(const sensor_msgs::ImageConstPtr& msg);
   image_transport::ImageTransport it_;
   image_transport::Subscriber Sub_Image;
   image_transport::Publisher Pub_Image;
 	// For debug message
 	ros::Publisher Debug_Msgs;
+
+  void proc(const sensor_msgs::ImageConstPtr& msg);
+
+	size_t width;
+	size_t height;
+	size_t symPos;
 };
 
 
@@ -62,7 +67,7 @@ class CoaxVisionControl
 	friend class ImageProc;
 
 public:
-	CoaxVisionControl(ros::NodeHandle &);
+	CoaxVisionControl(ros::NodeHandle &, ImageProc &);
 	~CoaxVisionControl();
 
 	bool reachNavState(int des_state, float timeout);

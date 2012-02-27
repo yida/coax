@@ -6,10 +6,6 @@
 #include <sstream>
 #include <ros/ros.h>
 
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 #include <CoaxVisionControl.h>
 
 namespace enc = sensor_msgs::image_encodings;
@@ -22,17 +18,18 @@ bool CompareSymAxis::operator() (SymAxis& A1, SymAxis& A2)
 		return false;
 };
 
-static const char WINDOW[] = "Image window";
-
-ImageProc::ImageProc(ros::NodeHandle& nh_): it_(nh_) {
-	Sub_Image = it_.subscribe("/image_out", 1 ,&ImageProc::proc, this);
-  Pub_Image = it_.advertise("/image_proc", 1);
-	Debug_Msgs = nh_.advertise<std_msgs::String>("debug",100);
-//		cv::namedWindow(WINDOW);
+ImageProc::ImageProc(ros::NodeHandle& nh_)
+:it_(nh_) 
+,Sub_Image(it_.subscribe("/image_in", 1 ,&ImageProc::proc, this))
+,Pub_Image(it_.advertise("/image_proc", 1))
+,Debug_Msgs(nh_.advertise<std_msgs::String>("debug",100))
+,width(0)
+,height(0)
+,symPos(0)
+{
 }
 
 ImageProc::~ImageProc() {
-//		cv::destroyWindow(WINDOW);
 }
 
 void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg) 
@@ -119,37 +116,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	
 			
 	SymAxis Best = Axis.top();
-	// cv windows to show symmetric line
-	cv_bridge::CvImagePtr cv_ptr;
-	try
-	{
-		cv_ptr = cv_bridge::toCvCopy(frame,enc::MONO8);
-	}
-	catch (cv_bridge::Exception& e)
-	{
-		ROS_ERROR("cv_bridge exception: %s", e.what());
-		return;
-	}
-
-	cv::circle(cv_ptr->image, cv::Point(Best.axis,frame.height/2), 5, CV_RGB(255,0,0));
-	// Display labeled image
-//		cv::imshow(WINDOW, cv_ptr->image);
-//		cv::waitKey(3);
-	Pub_Image.publish(cv_ptr->toImageMsg());
-
-//	std_msgs::String pub_msgs;
-//	std::stringstream ss;
-//	while (!Axis.empty()) {
-//		SymAxis temp_axis = Axis.top();
-//		ss << temp_axis.axis << ":" << temp_axis.value << " ";
-//		Axis.pop();
-//	}
-//  ss << endl;
-//	pub_msgs.data = ss.str();
-//	ROS_INFO("%s",pub_msgs.data.c_str());
-//	cout << ss << endl;	
-//	Debug_Msgs.publish(pub_msgs);
-//	Pub_Image.publish(frame);
+	Pub_Image.publish(frame);
 }
 
 

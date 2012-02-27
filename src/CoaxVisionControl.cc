@@ -12,7 +12,7 @@
 #include <com/sbapi.h>
 #include <CoaxVisionControl.h>
 
-CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
+CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImageProc)
 :reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
 ,configure_comm(node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm"))
 ,configure_control(node.serviceClient<coax_msgs::CoaxConfigureControl>("configure_control"))
@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "CoaxVisionControl");
 	ros::NodeHandle nh("/coax_vision_control");
   ImageProc vision(nh);  
-	CoaxVisionControl control(nh);
+	CoaxVisionControl control(nh,vision);
 
 	// make sure coax_server has enough time to start
 	ros::Duration(1.5).sleep(); 
