@@ -23,6 +23,7 @@
       <remap from="/coax_vision_control/state" to="/state"/>
 
       <remap from="/coax_vision_control/rawcontrol" to="/rawcontrol"/>
+			<remap from="/coax_vision_control/visioncontrol" to="/control"/>
 
       <remap from="/coax_vision_control/reach_nav_state" to="/reach_nav_state"/>
       <remap from="/coax_vision_control/configure_comm" to="/configure_comm"/>

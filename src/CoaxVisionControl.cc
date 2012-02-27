@@ -41,9 +41,9 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,rc_r(0.0)
 ,rc_p(0.0)
 ,rc_trim_th(0.0)
-,rc_trim_y(0.0)
-,rc_trim_r(0.0)
-,rc_trim_p(0.0)
+,rc_trim_y(0.104)
+,rc_trim_r(0.054)
+,rc_trim_p(0.036)
 ,img_th(0.0)
 ,img_y(0.0)
 ,img_r(0.0)
@@ -216,10 +216,10 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	rc_y = message->rcChannel[2];
 	rc_r = message->rcChannel[4];
 	rc_p = message->rcChannel[6];
-	rc_trim_th = message->rcChannel[1];
-	rc_trim_y = message->rcChannel[3];
-	rc_trim_r = message->rcChannel[5];
-	rc_trim_p = message->rcChannel[7];
+//	rc_trim_th = message->rcChannel[1];
+//	rc_trim_y = message->rcChannel[3];
+//	rc_trim_r = message->rcChannel[5];
+//	rc_trim_p = message->rcChannel[7];
 
 	gyro_ch1 = message->gyro[0];
 	gyro_ch2 = message->gyro[1];
@@ -231,6 +231,24 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 
 }
 
+bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo1, double servo2)
+{
+	motor_up = motor1;
+	motor_lo = motor2;
+	servo_roll = servo1;
+	servo_pitch = servo2;
+
+	motor_up = (motor1 > 1)? 1:motor1;
+	motor_up = (motor1 < 0)? 0:motor1;
+	motor_lo = (motor2 > 1)? 1:motor2;
+	motor_lo = (motor2 < 0)? 0:motor2;
+	servo_roll = (servo1 > 1)? 1:servo1;
+	servo_roll = (servo1 < -1)? -1:servo1;
+	servo_pitch = (servo2 > 1)? 1:servo2;
+	servo_pitch = (servo2 < -1)? -1:servo2;
+	return 1;
+}
+
 void CoaxVisionControl::controlPublisher(size_t rate)
 {
 	ros::Rate loop_rate(rate);
@@ -239,10 +257,12 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 	coax_msgs::CoaxControl vision_control;
 	while(ros::ok())
 	{
-		raw_control.motor1 = 0;
-		raw_control.motor2 = 0;
-		raw_control.servo1 = 0;
-		raw_control.servo2 = 0;
+		setRawControl(0.35+rc_th+rc_y+rc_trim_y,0.35+rc_y+rc_trim_y,rc_r+rc_trim_r,rc_p+rc_trim_p);
+		raw_control.motor1 = motor_up;
+		raw_control.motor2 = motor_lo;
+		raw_control.servo1 = servo_roll;
+		raw_control.servo2 = servo_pitch;
+		//ROS_INFO("servo1 %f servo2 %f",raw_control.servo1,raw_control.servo2);
 		raw_control_pub.publish(raw_control);
 		
 //		vision_control.roll = rc_r;
