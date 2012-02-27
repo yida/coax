@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <queue>
 #include <cmath>
@@ -257,7 +258,7 @@ void CoaxVisionControl::controlPublisher(unsigned int rate)
 	coax_msgs::CoaxControl vision_control;
 	while(ros::ok())
 	{
-		setRawControl(0.35+rc_th+rc_y+rc_trim_y,0.35+rc_y+rc_trim_y,rc_r+rc_trim_r,rc_p+rc_trim_p);
+		setRawControl(0.35+0.5*rc_th+0.1*(rc_y+rc_trim_y),0.35+0.1*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
 		raw_control.motor1 = motor_up;
 		raw_control.motor2 = motor_lo;
 		raw_control.servo1 = servo_roll;
