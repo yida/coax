@@ -76,6 +76,8 @@ public:
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
 
 	void controlPublisher(unsigned int rate);
+	
+	bool setRawControl(double motor_up,double motor_lo, double servo_ro,double servo_pi);
 
 
 
