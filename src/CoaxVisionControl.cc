@@ -66,7 +66,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
 	node.getParam("motorcoef/coef1",motor_coef1);
 	node.getParam("motorcoef/coef2",motor_coef2);
-	std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
+	//std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
 }
 
 CoaxVisionControl::~CoaxVisionControl()
@@ -279,6 +279,7 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 	coax_msgs::CoaxControl vision_control;
 	while(ros::ok())
 	{
+//		ROS_INFO("motor coef1: %f, motor coef2: %f",motor_coef1,motor_coef2);
 //		setRawControl(0.35+0.5*rc_th,0.45+0.5*rc_th+0.25*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
 		setRawControl(motor_coef1+0.5*rc_th,motor_coef2+0.5*rc_th,rc_r+rc_trim_r,rc_p+rc_trim_p);
 
@@ -304,7 +305,7 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "CoaxVisionControl");
-	ros::NodeHandle nh("/coax_vision_control");
+	ros::NodeHandle nh("~");
   ImageProc vision(nh);  
 	CoaxVisionControl control(nh,vision);
 
