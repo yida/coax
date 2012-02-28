@@ -15,3 +15,7 @@ yawmoment:
 rate_damping:
   roll: -0.04
   pitch: 0.04
+
+motorcoef:
+  coef1: 0.35
+  coef2: 0.34

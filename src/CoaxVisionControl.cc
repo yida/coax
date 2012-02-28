@@ -238,15 +238,33 @@ bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo
 	motor_lo = motor2;
 	servo_roll = servo1;
 	servo_pitch = servo2;
+	if (motor1 > 1) 
+		motor_up = 1;
+	else if (motor1 < 0) 
+		motor_up = 0;
+	else 
+		motor_up = motor1;
 
-	motor_up = (motor1 > 1)? 1:motor1;
-	motor_up = (motor1 < 0)? 0:motor1;
-	motor_lo = (motor2 > 1)? 1:motor2;
-	motor_lo = (motor2 < 0)? 0:motor2;
-	servo_roll = (servo1 > 1)? 1:servo1;
-	servo_roll = (servo1 < -1)? -1:servo1;
-	servo_pitch = (servo2 > 1)? 1:servo2;
-	servo_pitch = (servo2 < -1)? -1:servo2;
+	if (motor2 > 1) 
+		motor_lo = 1;
+	else if (motor2 < 0) 
+		motor_lo = 0;
+	else 
+		motor_lo = motor2;
+
+	if (servo1 > 1)
+		servo_roll = 1;
+	else if (servo1 < -1)
+		servo_roll = -1;
+	else
+		servo_roll = servo1;
+
+	if (servo2 > 1)
+		servo_pitch = 1;
+	else if (servo2 < -1)
+		servo_pitch = -1;
+	else
+		servo_pitch = servo2;
 	return 1;
 }
 
@@ -258,7 +276,9 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 	coax_msgs::CoaxControl vision_control;
 	while(ros::ok())
 	{
-		setRawControl(0.35+0.5*rc_th+0.1*(rc_y+rc_trim_y),0.35+0.1*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
+//		setRawControl(0.35+0.5*rc_th,0.45+0.5*rc_th+0.25*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
+		setRawControl(0.35+0.5*rc_th,0.353+0.5*rc_th,rc_r+rc_trim_r,rc_p+rc_trim_p);
+
 		raw_control.motor1 = motor_up;
 		raw_control.motor2 = motor_lo;
 		raw_control.servo1 = servo_roll;
