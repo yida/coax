@@ -147,6 +147,8 @@ private:
 	double roll_trim;
 	double pitch_trim;
 
+	double motor_coef1;
+	double motor_coef2;
 
 };
 

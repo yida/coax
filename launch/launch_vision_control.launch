@@ -47,10 +47,10 @@
 			<remap from="/coax_vision_control/set_control_mode" to="/set_control_mode"/>
 
       <param name="frequency" value="100"/>
-<!--
-      <rosparam file="$(find coax_vision_control)/config/coax_parameters.yaml"/>
-      <rosparam file="$(find coax_vision_control)/config/coax_control_params.yaml"/>
--->
+
+      <rosparam file="$(find coax_vision)/config/coax_parameters.yaml"/>
+      <rosparam file="$(find coax_vision)/config/coax_control_params.yaml"/>
+
     </node>
 
 
