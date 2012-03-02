@@ -18,4 +18,8 @@ rate_damping:
 
 motorcoef:
   coef1: 0.35
-  coef2: 0.351
+  coef2: 0.3832
+
+yawcoef:
+  coef1: 0.52
+  coef2: 0.52

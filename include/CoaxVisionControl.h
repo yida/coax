@@ -150,6 +150,9 @@ private:
 	double motor_coef1;
 	double motor_coef2;
 
+	double yaw_coef1;
+	double yaw_coef2;
+
 };
 
 
