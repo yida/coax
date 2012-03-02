@@ -20,6 +20,10 @@ motorcoef:
   coef1: 0.35
   coef2: 0.3832
 
-yawcoef:
+throttlecoef:
   coef1: 0.52
   coef2: 0.52
+
+yawcoef:
+  coef1: 0.0001
+  coef2: 0.0001

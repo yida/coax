@@ -68,6 +68,8 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 	node.getParam("motorcoef/coef2",motor_coef2);
 	node.getParam("yawcoef/coef1",yaw_coef1);
 	node.getParam("yawcoef/coef2",yaw_coef2);
+	node.getParam("throttlecoef/coef1",thr_coef1);
+	node.getParam("throttlecoef/coef2",thr_coef2);
 	//std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
 }
 
@@ -283,7 +285,7 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 	{
 //		ROS_INFO("motor coef1: %f, motor coef2: %f",motor_coef1,motor_coef2);
 //		setRawControl(0.35+0.5*rc_th,0.45+0.5*rc_th+0.25*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
-		setRawControl(motor_coef1+yaw_coef1*rc_th,motor_coef2+yaw_coef2*rc_th,(rc_r+rc_trim_r),-(rc_p+rc_trim_p));
+		setRawControl(motor_coef1+thr_coef1*rc_th+yaw_coef1*(rc_y+rc_trim_y),motor_coef2+thr_coef2*rc_th-yaw_coef2*(rc_y+rc_trim_y),(rc_r+rc_trim_r),-(rc_p+rc_trim_p));
 
 		raw_control.motor1 = motor_up;
 		raw_control.motor2 = motor_lo;
@@ -291,7 +293,7 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 		raw_control.servo2 = servo_pitch;
 		//ROS_INFO("servo1 %f servo2 %f",raw_control.servo1,raw_control.servo2);
 		raw_control_pub.publish(raw_control);
-		
+		ROS_INFO("%10.8f %10.8f",imu_y,gyro_ch1);		
 //		vision_control.roll = rc_r;
 //		vision_control.pitch = rc_p;
 //		vision_control.yaw = rc_y;

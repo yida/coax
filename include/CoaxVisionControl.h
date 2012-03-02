@@ -153,6 +153,8 @@ private:
 	double yaw_coef1;
 	double yaw_coef2;
 
+	double thr_coef1;
+	double thr_coef2;
 };
 
 
