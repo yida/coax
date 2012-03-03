@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 
 #include <CoaxVisionControl.h>
+#include <coax_vision/ImageDebug.h>
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -20,9 +21,9 @@ bool CompareSymAxis::operator() (SymAxis& A1, SymAxis& A2)
 
 ImageProc::ImageProc(ros::NodeHandle& nh_)
 :it_(nh_) 
-,Sub_Image(it_.subscribe("/image_in", 1 ,&ImageProc::proc, this))
-,Pub_Image(it_.advertise("/image_proc", 1))
-,Debug_Msgs(nh_.advertise<std_msgs::String>("debug",100))
+,Sub_Image(it_.subscribe("image_in", 1 ,&ImageProc::proc, this))
+,Pub_Image(it_.advertise("image_proc", 1))
+,Debug_Msgs(nh_.advertise<coax_vision::ImageDebug>("image_debug",100))
 ,width(0)
 ,height(0)
 ,symPos(0)
@@ -117,7 +118,15 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	
 			
 	SymAxis Best = Axis.top();
-	ROS_INFO("Axis %d",Best.axis);
+	//ROS_INFO("Axis %d",Best.axis);
+	
+	// Generate Debug Message
+	coax_vision::ImageDebug debugMsg;
+	debugMsg.header.stamp = ros::Time::now();
+	debugMsg.header.seq = 0;
+	debugMsg.header.frame_id = "image_debug";
+	debugMsg.BestAxis = Best.axis;
+	Debug_Msgs.publish(debugMsg);	
 	Pub_Image.publish(frame);
 }
 
