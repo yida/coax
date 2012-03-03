@@ -61,6 +61,11 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,servo_pitch(0)		 
 ,roll_trim(0)
 ,pitch_trim(0)
+
+,yaw_des(0.0);
+,yaw_rate_des(0.0);
+,init_count(0);
+
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -70,6 +75,8 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 	node.getParam("yawcoef/coef2",yaw_coef2);
 	node.getParam("throttlecoef/coef1",thr_coef1);
 	node.getParam("throttlecoef/coef2",thr_coef2);
+	node.getParam("yawcontrol/proportional",kp_yaw);
+	node.getParam("yawcontrol/differential",kd_yaw);
 	//std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
 }
 
@@ -281,11 +288,24 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 
 	coax_msgs::CoaxRawControl raw_control;
 	coax_msgs::CoaxControl vision_control;
+	double sum_Yaw_desire = 0;
+
 	while(ros::ok())
 	{
-//		ROS_INFO("motor coef1: %f, motor coef2: %f",motor_coef1,motor_coef2);
-//		setRawControl(0.35+0.5*rc_th,0.45+0.5*rc_th+0.25*(rc_y+rc_trim_y),rc_r+rc_trim_r,rc_p+rc_trim_p);
-		setRawControl(motor_coef1+thr_coef1*rc_th+yaw_coef1*(rc_y+rc_trim_y),motor_coef2+thr_coef2*rc_th-yaw_coef2*(rc_y+rc_trim_y),(rc_r+rc_trim_r),-(rc_p+rc_trim_p));
+		if (init_count<100) {
+			sum_Yaw_desire = sum_Yaw_desire + imu_y;
+			init_count ++;
+		}
+		else {
+			yaw_des = sum_Yaw_desire / 100;		
+		}
+				
+
+		double motor1_des = motor_coef1+thr_coef1*rc_th+yaw_coef1*(rc_y+rc_trim_y);
+		double motor2_des = motor_coef2+thr_coef2*rc_th-yaw_coef2*(rc_y+rc_trim_y);
+		double servo1_des = (rc_r+rc_trim_r);
+		double servo2_des = -(rc_p+rc_trim_p);
+		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 
 		raw_control.motor1 = motor_up;
 		raw_control.motor2 = motor_lo;

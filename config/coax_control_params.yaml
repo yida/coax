@@ -8,7 +8,7 @@ force:
     y: 0.4
     z: 2.3
 
-yawmoment:
+yawcontrol:
   proportional: 0.013893
   differential: 0.00166716
 

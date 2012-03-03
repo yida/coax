@@ -155,6 +155,13 @@ private:
 
 	double thr_coef1;
 	double thr_coef2;
+
+	double kp_yaw;
+	double kd_yaw;
+
+	double yaw_des;
+	double yaw_rate_des;
+	size_t init_count;
 };
 
 
