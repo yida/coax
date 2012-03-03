@@ -13,12 +13,12 @@ yawcontrol:
   differential: 0.005
 
 rollcontrol:
-  proportional: 0.0
-  differential: 0.05
+  proportional: 1
+  differential: 0.10
 
 pitchcontrol:
-  proportional: 0.0
-  differential: 0.05 
+  proportional: 1
+  differential: 0.25
 
 rate_damping:
   roll: -0.04
@@ -29,10 +29,10 @@ motorconst:
   const2: 0.3832
 
 rollconst:
-  const: -0.075
+  const: -0.050
 
 pitchconst:
-  const: -0.001
+  const: 0.008
 
 throttlecoef:
   coef1: 0.52

@@ -34,20 +34,21 @@ ImageProc::~ImageProc() {
 
 void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg) 
 {
+//	ROS_INFO("frame type %d",msg->step);
 	sensor_msgs::Image frame;
 	frame = *msg;
 	// Resize
-//	size_t resize = 10; 
-//	frame.height = msg->height / resize;
-//  frame.width = msg->width / resize;
-//  frame.step = msg->width / resize;
-//	frame.data.resize(frame.height * frame.width);
-//  size_t im_idx = 0;
-//  for (size_t i = 0; i < msg->height; i += resize)
-//	  for (size_t j = 0; j < msg->width; j += resize) {
-//			frame.data[im_idx] = msg->data[i*msg->step+j];
-//			im_idx ++;
-//		}
+	size_t resize = 10; 
+	frame.height = msg->height / resize;
+  frame.width = msg->width / resize;
+  frame.step = msg->width / resize;
+	frame.data.resize(frame.height * frame.width);
+  size_t im_idx = 0;
+  for (size_t i = 0; i < msg->height; i += resize)
+	  for (size_t j = 0; j < msg->width; j += resize) {
+			frame.data[im_idx] = msg->data[i*msg->step+j];
+			im_idx ++;
+		}
 
 	// Inegral Image
 	vector <uint32_t> Integral_Image;
@@ -115,7 +116,8 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	}
 	
 			
-	//SymAxis Best = Axis.top();
+	SymAxis Best = Axis.top();
+	ROS_INFO("Axis %d",Best.axis);
 	Pub_Image.publish(frame);
 }
 

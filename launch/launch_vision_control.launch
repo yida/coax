@@ -1,17 +1,17 @@
 <launch>
 		  <!-- nodelet manager process -->
-<!--
+
 		  <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager"
 	        args="manager" />
--->		
+		
 		  <!-- camera driver nodelet -->
-<!--
+
 		  <node pkg="nodelet" type="nodelet" name="camera1394_nodelet"
 					args="load camera1394/driver camera_nodelet_manager">
-					<rosparam file = "pointGrey2000.yaml"/>
+					<rosparam file = "$(find coax_vision)/config/pointGrey2001.yaml"/>
 			<remap from="/camera/image_raw" to="/image_in" /> 
 			</node>
--->			
+			
     <node pkg="coax_server"
           name="coax"
           type="coax_server"
