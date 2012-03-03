@@ -293,7 +293,7 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 		raw_control.servo2 = servo_pitch;
 		//ROS_INFO("servo1 %f servo2 %f",raw_control.servo1,raw_control.servo2);
 		raw_control_pub.publish(raw_control);
-		ROS_INFO("%10.8f %10.8f",imu_y,gyro_ch1);		
+//		ROS_INFO("%10.8f %10.8f",imu_y,gyro_ch1);		
 //		vision_control.roll = rc_r;
 //		vision_control.pitch = rc_p;
 //		vision_control.yaw = rc_y;
