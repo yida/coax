@@ -28,6 +28,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,FIRST_START(false)
 ,FIRST_LANDING(false)
 ,FIRST_HOVER(false)
+,INIT_DESIRE(false)
 ,coax_nav_mode(0)
 ,coax_control_mode(0)
 ,coax_state_age(0)
@@ -62,9 +63,9 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,roll_trim(0)
 ,pitch_trim(0)
 
-,yaw_des(0.0);
-,yaw_rate_des(0.0);
-,init_count(0);
+,yaw_des(0.0)
+,yaw_rate_des(0.0)
+,init_count(0)
 
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
@@ -171,6 +172,8 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 //						pitch_trim = 0;
 //					}
 					// switch to start procedure
+					INIT_DESIRE = false;
+					init_count = 0;
 					CONTROL_MODE = CONTROL_START;
 //					FIRST_START = true;
 				} else {
@@ -216,7 +219,7 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
-	if ((battery_voltage < 10.80) && !LOW_POWER_DETECTED){
+	if ((battery_voltage < 10.00) && !LOW_POWER_DETECTED){
 		ROS_INFO("Battery Low!!! (%fV) Landing initialized",battery_voltage);
 		LOW_POWER_DETECTED = true;
 	}
@@ -292,21 +295,28 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 
 	while(ros::ok())
 	{
-		if (init_count<100) {
+		if ((init_count<100)) {
 			sum_Yaw_desire = sum_Yaw_desire + imu_y;
 			init_count ++;
 		}
-		else {
+		else if (!INIT_DESIRE) {
 			yaw_des = sum_Yaw_desire / 100;		
+			ROS_INFO("Initiated Desired Yaw %f",yaw_des);
+			ROS_INFO("Current Battery Voltage %f",battery_voltage);
+			sum_Yaw_desire = 0;
+			INIT_DESIRE = true;
 		}
-				
-
-		double motor1_des = motor_coef1+thr_coef1*rc_th+yaw_coef1*(rc_y+rc_trim_y);
-		double motor2_des = motor_coef2+thr_coef2*rc_th-yaw_coef2*(rc_y+rc_trim_y);
-		double servo1_des = (rc_r+rc_trim_r);
-		double servo2_des = -(rc_p+rc_trim_p);
-		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
-
+		
+		if (INIT_DESIRE) {
+			double Dyaw = imu_y - yaw_des;
+			double Dyaw_rate = gyro_ch3 - yaw_rate_des; 
+			double yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
+			double motor1_des = motor_coef1+thr_coef1*rc_th-yaw_control;
+			double motor2_des = motor_coef2+thr_coef2*rc_th+yaw_control;
+			double servo1_des = (rc_r+rc_trim_r);
+			double servo2_des = -(rc_p+rc_trim_p);
+			setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
+		}
 		raw_control.motor1 = motor_up;
 		raw_control.motor2 = motor_lo;
 		raw_control.servo1 = servo_roll;

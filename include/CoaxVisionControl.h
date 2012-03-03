@@ -106,6 +106,7 @@ private:
 	bool FIRST_START;
 	bool FIRST_LANDING;
 	bool FIRST_HOVER;
+	bool INIT_DESIRE;
 
 	bool coax_nav_mode;
 	bool coax_control_mode;

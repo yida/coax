@@ -9,8 +9,8 @@ force:
     z: 2.3
 
 yawcontrol:
-  proportional: 0.013893
-  differential: 0.00166716
+  proportional: 0.060
+  differential: 0.005
 
 rate_damping:
   roll: -0.04
