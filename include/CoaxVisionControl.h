@@ -70,6 +70,7 @@ public:
 	CoaxVisionControl(ros::NodeHandle &, ImageProc &);
 	~CoaxVisionControl();
 
+	void loadParams(ros::NodeHandle & n);
 	bool reachNavState(int des_state, float timeout);
 	bool configureComm(int frequency, int contents);
 	bool configureControl(size_t rollMode, size_t pitchMode, size_t yawMode, size_t altitudeMode);
@@ -149,8 +150,10 @@ private:
 	double roll_trim;
 	double pitch_trim;
 
-	double motor_coef1;
-	double motor_coef2;
+	double motor_const1;
+	double motor_const2;
+	double servo1_const;
+	double servo2_const;
 
 	double yaw_coef1;
 	double yaw_coef2;

@@ -10,23 +10,29 @@ force:
 
 yawcontrol:
   proportional: 0.060
-  differential: 0.006
-
-rollcontrol:
-  proportional: 0.05
   differential: 0.005
 
+rollcontrol:
+  proportional: 0.0
+  differential: 0.05
+
 pitchcontrol:
-  proportional: 0.05
-  differential: 0.005 
+  proportional: 0.0
+  differential: 0.05 
 
 rate_damping:
   roll: -0.04
   pitch: 0.04
 
-motorcoef:
-  coef1: 0.35
-  coef2: 0.3832
+motorconst:
+  const1: 0.35
+  const2: 0.3832
+
+rollconst:
+  const: -0.075
+
+pitchconst:
+  const: -0.001
 
 throttlecoef:
   coef1: 0.52

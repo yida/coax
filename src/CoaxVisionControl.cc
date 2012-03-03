@@ -35,82 +35,57 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,raw_control_age(0)
 ,init_count(0)
 ,battery_voltage(12.22)
-,imu_y(0.0)
-,imu_r(0.0)
-,imu_p(0.0)
+,imu_y(0.0),imu_r(0.0),imu_p(0.0)
 ,range_al(0.0)
-,rc_th(0.0)
-,rc_y(0.0)
-,rc_r(0.0)
-,rc_p(0.0)
-,rc_trim_th(0.0)
-,rc_trim_y(0.104)
-,rc_trim_r(0.054)
-,rc_trim_p(0.036)
-,img_th(0.0)
-,img_y(0.0)
-,img_r(0.0)
-,img_p(0.0)
-,gyro_ch1(0.0)
-,gyro_ch2(0.0)
-,gyro_ch3(0.0)
-,accel_x(0.0)
-,accel_y(0.0)
-,accel_z(0.0)
-,motor_up(0)
-,motor_lo(0)
-,servo_roll(0)
-,servo_pitch(0)		 
-,roll_trim(0)
-,pitch_trim(0)
-,yaw_des(0.0)
-,yaw_rate_des(0.0)
-//,roll_des(0.0)
-//,roll_rate_des(0,0)
-//,pitch_des(0.0)
-//,pitch_rate_des(0.0)
+,rc_th(0.0),rc_y(0.0),rc_r(0.0),rc_p(0.0)
+,rc_trim_th(0.0),rc_trim_y(0.104),rc_trim_r(0.054),rc_trim_p(0.036)
+,img_th(0.0),img_y(0.0),img_r(0.0),img_p(0.0)
+,gyro_ch1(0.0),gyro_ch2(0.0),gyro_ch3(0.0)
+,accel_x(0.0),accel_y(0.0),accel_z(0.0)
+,motor_up(0),motor_lo(0)
+,servo_roll(0),servo_pitch(0)
+,roll_trim(0),pitch_trim(0)
+,yaw_des(0.0),yaw_rate_des(0.0)
+,roll_des(0.0),roll_rate_des(0.0)
+,pitch_des(0.0),pitch_rate_des(0.0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
-	node.getParam("motorcoef/coef1",motor_coef1);
-	node.getParam("motorcoef/coef2",motor_coef2);
-	node.getParam("yawcoef/coef1",yaw_coef1);
-	node.getParam("yawcoef/coef2",yaw_coef2);
-	node.getParam("throttlecoef/coef1",thr_coef1);
-	node.getParam("throttlecoef/coef2",thr_coef2);
-	node.getParam("yawcontrol/proportional",kp_yaw);
-	node.getParam("yawcontrol/differential",kd_yaw);
-	node.getParam("rollcontrol/proportional",kp_roll);
-	node.getParam("rollcontrol/differential",kd_roll);
-	node.getParam("pitchcontrol/proportional",kp_pitch);
-	node.getParam("pitchcontrol/differential",kd_pitch);
-	roll_des = 0.0;
-	roll_rate_des = 0.0;
-	pitch_des = 0.0;
-	pitch_rate_des = 0.0;
-	//std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
+	loadParams(node);
 }
 
-CoaxVisionControl::~CoaxVisionControl()
-{
+CoaxVisionControl::~CoaxVisionControl() {}
+
+void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
+	n.getParam("motorconst/const1",motor_const1);
+	n.getParam("motorconst/const2",motor_const2);
+	n.getParam("rollconst/const",servo1_const);
+	n.getParam("pitchconst/const",servo2_const);
+	n.getParam("yawcoef/coef1",yaw_coef1);
+	n.getParam("yawcoef/coef2",yaw_coef2);
+	n.getParam("throttlecoef/coef1",thr_coef1);
+	n.getParam("throttlecoef/coef2",thr_coef2);
+	n.getParam("yawcontrol/proportional",kp_yaw);
+	n.getParam("yawcontrol/differential",kd_yaw);
+	n.getParam("rollcontrol/proportional",kp_roll);
+	n.getParam("rollcontrol/differential",kd_roll);
+	n.getParam("pitchcontrol/proportional",kp_pitch);
+	n.getParam("pitchcontrol/differential",kd_pitch);
 }
 
 //===================
 // Service Clients
 //===================
 	
-bool CoaxVisionControl::reachNavState(int des_state, float timeout)
-{
+bool CoaxVisionControl::reachNavState(int des_state, float timeout) {
 	coax_msgs::CoaxReachNavState srv;
 	srv.request.desiredState = des_state;
 	srv.request.timeout = timeout;
-	reach_nav_state.call(srv);
-	
+	reach_nav_state.call(srv);	
 	return 0;
 }
 
-bool CoaxVisionControl::configureComm(int frequency, int contents)
-{
+bool CoaxVisionControl::configureComm(int frequency, int contents) {
 	coax_msgs::CoaxConfigureComm srv;
 	srv.request.frequency = frequency;
 	srv.request.contents = contents;
@@ -119,8 +94,7 @@ bool CoaxVisionControl::configureComm(int frequency, int contents)
 	return 0;
 }
 
-bool CoaxVisionControl::configureControl(size_t rollMode, size_t pitchMode, size_t yawMode, size_t altitudeMode)
-{
+bool CoaxVisionControl::configureControl(size_t rollMode, size_t pitchMode, size_t yawMode, size_t altitudeMode) {
 	coax_msgs::CoaxConfigureControl srv;
 	srv.request.rollMode = rollMode;
 	srv.request.pitchMode = pitchMode;
@@ -131,8 +105,7 @@ bool CoaxVisionControl::configureControl(size_t rollMode, size_t pitchMode, size
 	return 0;
 }
 
-bool CoaxVisionControl::setTimeout(size_t control_timeout_ms, size_t watchdog_timeout_ms)
-{
+bool CoaxVisionControl::setTimeout(size_t control_timeout_ms, size_t watchdog_timeout_ms) {
 	coax_msgs::CoaxSetTimeout srv;
 	srv.request.control_timeout_ms = control_timeout_ms;
 	srv.request.watchdog_timeout_ms = watchdog_timeout_ms;
@@ -143,8 +116,7 @@ bool CoaxVisionControl::setTimeout(size_t control_timeout_ms, size_t watchdog_ti
 //==============
 //ServiceServer
 //==============
-bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out)
-{
+bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out) {
 	out.result = 0;
 	
 	switch (req.mode) 
@@ -157,8 +129,7 @@ bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_v
 	return 0;
 }
 
-bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out)
-{
+bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out) {
 	out.result = 0;
 	
 	switch (req.mode) 
@@ -173,14 +144,6 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 						}
 						reachNavState(SB_NAV_RAW, 0.5);
 					}
-//					// set initial trim
-//					if (COAX == 56) {
-//						roll_trim = 0.0285;
-//						pitch_trim = 0.0921;
-//					} else {
-//						roll_trim = 0;
-//						pitch_trim = 0;
-//					}
 					// switch to start procedure
 					INIT_DESIRE = false;
 					init_count = 0;
@@ -224,8 +187,7 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 // Subscriber
 //==============
 
-void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message)
-{
+void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
@@ -259,8 +221,7 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 
 }
 
-bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo1, double servo2)
-{
+bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo1, double servo2) {
 	motor_up = motor1;
 	motor_lo = motor2;
 	servo_roll = servo1;
@@ -295,16 +256,18 @@ bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo
 	return 1;
 }
 
-void CoaxVisionControl::controlPublisher(size_t rate)
-{
+void CoaxVisionControl::controlPublisher(size_t rate) {
 	ros::Rate loop_rate(rate);
 
 	coax_msgs::CoaxRawControl raw_control;
 	coax_msgs::CoaxControl vision_control;
 	double sum_Yaw_desire = 0;
+	double Dyaw,Dyaw_rate,yaw_control;
+	double Droll,Droll_rate,roll_control;
+	double Dpitch,Dpitch_rate,pitch_control;
+	double motor1_des,motor2_des,servo1_des,servo2_des;
 
-	while(ros::ok())
-	{
+	while(ros::ok()) {
 		if ((init_count<100)) {
 			sum_Yaw_desire = sum_Yaw_desire + imu_y;
 			init_count ++;
@@ -318,17 +281,23 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 		}
 		
 		if (INIT_DESIRE) {
-			double Dyaw = imu_y - yaw_des;
-			double Dyaw_rate = gyro_ch3 - yaw_rate_des; 
-			double yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
-			double Droll = imu_r - roll_des;
-			double Droll_rate = gyro_ch1 - roll_rate_des;
-			double Dpitch = imu_p - pitch_des;
-			double Dpitch_rate = gyro_ch2 - pitch_rate_des;
-			double motor1_des = motor_coef1+thr_coef1*rc_th-yaw_control;
-			double motor2_des = motor_coef2+thr_coef2*rc_th+yaw_control;
-			double servo1_des = (rc_r+rc_trim_r);
-			double servo2_des = -(rc_p+rc_trim_p);
+			// yaw error and ctrl
+			Dyaw = imu_y - yaw_des;
+			Dyaw_rate = gyro_ch3 - yaw_rate_des; 
+			yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
+			// roll error and ctrl
+			Droll = imu_r - roll_des;
+			Droll_rate = gyro_ch1 - roll_rate_des;
+			roll_control = kp_roll * Droll + kd_roll * Droll_rate;
+			// pitch error and ctrl
+			Dpitch = imu_p - pitch_des;
+			Dpitch_rate = gyro_ch2 - pitch_rate_des;
+			pitch_control = kp_pitch * Dpitch + kd_pitch * Dpitch_rate;
+			// desired motor & servo output
+			motor1_des = motor_const1+thr_coef1*rc_th-yaw_control;
+			motor2_des = motor_const2+thr_coef2*rc_th+yaw_control;
+			servo1_des = servo1_const + (rc_r+rc_trim_r) + roll_control;
+			servo2_des = servo2_const - (rc_p+rc_trim_p)  + pitch_control;
 			setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 		}
 		raw_control.motor1 = motor_up;
