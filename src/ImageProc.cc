@@ -115,7 +115,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	}
 	
 			
-	SymAxis Best = Axis.top();
+	//SymAxis Best = Axis.top();
 	Pub_Image.publish(frame);
 }
 

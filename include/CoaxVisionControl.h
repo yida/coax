@@ -112,6 +112,7 @@ private:
 	bool coax_control_mode;
 	int coax_state_age;
 	int raw_control_age;
+	int init_count;
 	
 	double battery_voltage;
 	
@@ -159,10 +160,19 @@ private:
 
 	double kp_yaw;
 	double kd_yaw;
+	double kp_roll;
+	double kd_roll;
+	double kp_pitch;
+	double kd_pitch;
 
 	double yaw_des;
 	double yaw_rate_des;
-	size_t init_count;
+	double roll_des;
+	double roll_rate_des;
+	double pitch_des;
+	double pitch_rate_des;
+
+
 };
 
 

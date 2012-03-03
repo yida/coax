@@ -10,7 +10,15 @@ force:
 
 yawcontrol:
   proportional: 0.060
+  differential: 0.006
+
+rollcontrol:
+  proportional: 0.05
   differential: 0.005
+
+pitchcontrol:
+  proportional: 0.05
+  differential: 0.005 
 
 rate_damping:
   roll: -0.04

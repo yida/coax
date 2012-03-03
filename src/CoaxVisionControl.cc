@@ -33,6 +33,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,coax_control_mode(0)
 ,coax_state_age(0)
 ,raw_control_age(0)
+,init_count(0)
 ,battery_voltage(12.22)
 ,imu_y(0.0)
 ,imu_r(0.0)
@@ -62,11 +63,12 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,servo_pitch(0)		 
 ,roll_trim(0)
 ,pitch_trim(0)
-
 ,yaw_des(0.0)
 ,yaw_rate_des(0.0)
-,init_count(0)
-
+//,roll_des(0.0)
+//,roll_rate_des(0,0)
+//,pitch_des(0.0)
+//,pitch_rate_des(0.0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -78,6 +80,14 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 	node.getParam("throttlecoef/coef2",thr_coef2);
 	node.getParam("yawcontrol/proportional",kp_yaw);
 	node.getParam("yawcontrol/differential",kd_yaw);
+	node.getParam("rollcontrol/proportional",kp_roll);
+	node.getParam("rollcontrol/differential",kd_roll);
+	node.getParam("pitchcontrol/proportional",kp_pitch);
+	node.getParam("pitchcontrol/differential",kd_pitch);
+	roll_des = 0.0;
+	roll_rate_des = 0.0;
+	pitch_des = 0.0;
+	pitch_rate_des = 0.0;
 	//std::cout << motor_coef1 << ' ' << motor_coef2 << std::endl;
 }
 
@@ -311,6 +321,10 @@ void CoaxVisionControl::controlPublisher(size_t rate)
 			double Dyaw = imu_y - yaw_des;
 			double Dyaw_rate = gyro_ch3 - yaw_rate_des; 
 			double yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
+			double Droll = imu_r - roll_des;
+			double Droll_rate = gyro_ch1 - roll_rate_des;
+			double Dpitch = imu_p - pitch_des;
+			double Dpitch_rate = gyro_ch2 - pitch_rate_des;
 			double motor1_des = motor_coef1+thr_coef1*rc_th-yaw_control;
 			double motor2_des = motor_coef2+thr_coef2*rc_th+yaw_control;
 			double servo1_des = (rc_r+rc_trim_r);
