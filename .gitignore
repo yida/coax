@@ -4,6 +4,7 @@ lib
 
 srv_gen
 msg_gen
+src/coax_vision
 
 .DS_Store
 *~
