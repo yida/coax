@@ -11,7 +11,7 @@
 					<rosparam file = "$(find coax_vision)/config/pointGrey2001.yaml"/>
 			<remap from="/camera/image_raw" to="/image_in" /> 
 			</node>
-			
+<!--			
     <node pkg="coax_server"
           name="coax"
           type="coax_server"
@@ -27,7 +27,7 @@
 			<remap from="/coax_server/configure_control" to="/configure_control"/>
       <remap from="/coax_server/set_timeout" to="/set_timeout"/>
     </node>
-
+-->
     <node pkg="coax_vision"
           name="CoaxVisionControl"
           type="CoaxVisionControl"
@@ -44,6 +44,10 @@
 
 			<remap from="/CoaxVisionControl/set_nav_mode" to="/set_nav_mode"/>
 			<remap from="/CoaxVisionControl/set_control_mode" to="/set_control_mode"/>
+
+			<remap from="/CoaxVisionControl/image_in" to="/image_in"/>
+			<remap from="/CoaxVisionControl/image_proc" to="/image_proc"/>
+			<remap from="/CoaxVisionControl/image_debug" to="/image_debug"/>
 
       <param name="frequency" value="100"/>
 

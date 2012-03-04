@@ -118,6 +118,10 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	
 			
 	SymAxis Best = Axis.top();
+	Axis.pop();
+	SymAxis Second = Axis.top();
+	Axis.pop();
+	SymAxis Third = Axis.top();
 	//ROS_INFO("Axis %d",Best.axis);
 	
 	// Generate Debug Message
@@ -126,6 +130,8 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	debugMsg.header.seq = 0;
 	debugMsg.header.frame_id = "image_debug";
 	debugMsg.BestAxis = Best.axis;
+	debugMsg.SecondAxis = Second.axis;
+	debugMsg.ThirdAxis = Third.axis;
 	Debug_Msgs.publish(debugMsg);	
 	Pub_Image.publish(frame);
 }
