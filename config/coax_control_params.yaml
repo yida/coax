@@ -9,7 +9,7 @@ force:
     z: 2.3
 
 yawcontrol:
-  proportional: 0.060
+  proportional: 0.030
   differential: 0.005
 
 rollcontrol:
@@ -27,6 +27,12 @@ rate_damping:
 motorconst:
   const1: 0.35
   const2: 0.3832
+
+rollrccoef:
+  coef: 0.4
+
+pitchrccoef:
+  coef: 0.4
 
 rollconst:
   const: -0.050
