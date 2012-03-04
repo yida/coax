@@ -45,6 +45,11 @@
 			<remap from="/CoaxVisionControl/set_nav_mode" to="/set_nav_mode"/>
 			<remap from="/CoaxVisionControl/set_control_mode" to="/set_control_mode"/>
 
+			<remap from="/CoaxVisionControl/image_in" to="/image_in"/>
+			<remap from="/CoaxVisionControl/image_proc" to="/image_proc"/>
+			<remap from="/CoaxVisionControl/image_debug" to="/image_debug"/>
+
+
       <param name="frequency" value="100"/>
 
       <rosparam file="$(find coax_vision)/config/coax_parameters.yaml"/>
