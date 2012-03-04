@@ -155,6 +155,9 @@ private:
 	double servo1_const;
 	double servo2_const;
 
+	double r_rc_coef;
+	double p_rc_coef;
+
 	double yaw_coef1;
 	double yaw_coef2;
 
