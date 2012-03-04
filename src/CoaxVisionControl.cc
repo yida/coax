@@ -65,6 +65,8 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("yawcoef/coef2",yaw_coef2);
 	n.getParam("throttlecoef/coef1",thr_coef1);
 	n.getParam("throttlecoef/coef2",thr_coef2);
+	n.getParam("rollrccoef/coef",r_rc_coef);
+	n.getParam("pitchrccoef/coef",p_rc_coef);
 	n.getParam("yawcontrol/proportional",kp_yaw);
 	n.getParam("yawcontrol/differential",kd_yaw);
 	n.getParam("rollcontrol/proportional",kp_roll);
@@ -296,8 +298,8 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 			// desired motor & servo output
 			motor1_des = motor_const1+thr_coef1*rc_th-yaw_control;
 			motor2_des = motor_const2+thr_coef2*rc_th+yaw_control;
-			servo1_des = servo1_const + (rc_r+rc_trim_r) + roll_control;
-			servo2_des = servo2_const - (rc_p+rc_trim_p)  + pitch_control;
+			servo1_des = servo1_const + r_rc_coef * (rc_r+rc_trim_r) + roll_control;
+			servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
 			setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 		}
 		raw_control.motor1 = motor_up;
