@@ -13,12 +13,12 @@ yawcontrol:
   differential: 0.005
 
 rollcontrol:
-  proportional: 1
-  differential: 0.10
+  proportional: 0.5
+  differential: 0.05
 
 pitchcontrol:
-  proportional: 1
-  differential: 0.25
+  proportional: 0.5
+  differential: 0.05
 
 rate_damping:
   roll: -0.04
