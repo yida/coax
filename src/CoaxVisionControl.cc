@@ -34,6 +34,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,coax_state_age(0)
 ,raw_control_age(0)
 ,init_count(0)
+,rotor_ready_count(-1)
 ,battery_voltage(12.22)
 ,imu_y(0.0),imu_r(0.0),imu_p(0.0)
 ,range_al(0.0)
@@ -45,6 +46,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,motor_up(0),motor_lo(0)
 ,servo_roll(0),servo_pitch(0)
 ,roll_trim(0),pitch_trim(0)
+,motor1_des(0.0),motor2_des(0.0),servo1_des(0.0),servo2_des(0.0)
 ,yaw_des(0.0),yaw_rate_des(0.0)
 ,roll_des(0.0),roll_rate_des(0.0)
 ,pitch_des(0.0),pitch_rate_des(0.0)
@@ -137,30 +139,31 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 	switch (req.mode) 
 	{
 		case 1:
-			if (CONTROL_MODE == CONTROL_LANDED){
-				if (battery_voltage > 11) {
-					if (coax_nav_mode != SB_NAV_RAW) {
-						if (coax_nav_mode != SB_NAV_STOP) {
-							reachNavState(SB_NAV_STOP, 0.5);
-							ros::Duration(0.5).sleep(); // make sure CoaX is in SB_NAV_STOP mode
-						}
-						reachNavState(SB_NAV_RAW, 0.5);
-					}
-					// switch to start procedure
-					INIT_DESIRE = false;
-					init_count = 0;
-					CONTROL_MODE = CONTROL_START;
-//					FIRST_START = true;
-				} else {
-					ROS_INFO("Battery Low!!! (%f V) Start denied",battery_voltage);
-					LOW_POWER_DETECTED = true;
-					out.result = -1;
-				}
-			} else {
+			if (CONTROL_MODE != CONTROL_LANDED){
 				ROS_INFO("Start can only be executed from mode CONTROL_LANDED");
 				out.result = -1;
+				break;
 			}
 
+			if (battery_voltage > 11) {
+				ROS_INFO("Battery Low!!! (%f V) Start denied",battery_voltage);
+				LOW_POWER_DETECTED = true;
+				out.result = -1;
+				break;
+			}
+
+			if (coax_nav_mode != SB_NAV_RAW) {
+				if (coax_nav_mode != SB_NAV_STOP) {
+					reachNavState(SB_NAV_STOP, 0.5);
+					ros::Duration(0.5).sleep(); // make sure CoaX is in SB_NAV_STOP mode
+				}
+				reachNavState(SB_NAV_RAW, 0.5);
+			}
+			// switch to start procedure
+			INIT_DESIRE = false;
+			init_count = 0;
+			rotor_ready_count = 0;
+			CONTROL_MODE = CONTROL_START;
 			break;
 
 		case 9:
@@ -173,13 +176,13 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 			
 			reachNavState(SB_NAV_STOP, 0.5);
 			
+			rotor_ready_count = -1;
 			CONTROL_MODE = CONTROL_LANDED;
 			break;
 		
 		default:
 			ROS_INFO("Non existent control mode request!");
 			out.result = -1;		
-
 	}
 	return true;
 }
@@ -193,7 +196,7 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
-	if ((battery_voltage < 10.00) && !LOW_POWER_DETECTED){
+	if ((battery_voltage < 10.30) && !LOW_POWER_DETECTED){
 		ROS_INFO("Battery Low!!! (%fV) Landing initialized",battery_voltage);
 		LOW_POWER_DETECTED = true;
 	}
@@ -224,10 +227,13 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 }
 
 bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo1, double servo2) {
+	coax_msgs::CoaxRawControl raw_control;
+
 	motor_up = motor1;
 	motor_lo = motor2;
 	servo_roll = servo1;
 	servo_pitch = servo2;
+
 	if (motor1 > 1) 
 		motor_up = 1;
 	else if (motor1 < 0) 
@@ -255,19 +261,60 @@ bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo
 		servo_pitch = -1;
 	else
 		servo_pitch = servo2;
+	
+	raw_control.motor1 = motor_up;
+	raw_control.motor2 = motor_lo;
+	raw_control.servo1 = servo_roll;
+	raw_control.servo2 = servo_pitch;
+
+	raw_control_pub.publish(raw_control);
+
 	return 1;
+}
+
+bool CoaxVisionControl::rotorReady(void) {
+	if ((rotor_ready_count >= 0) && (rotor_ready_count <= 500)) 
+		rotor_ready_count++;
+	if (rotor_ready_count < 200) {
+		motor1_des = rotor_ready_count / 200 * motor_const1;
+		return false;
+	}
+	if (rotor_ready_count < 400) {
+		motor1_des = motor_const1;
+		motor2_des = rotor_ready_count / 200 * motor_const2;
+		return false;
+	}
+	return true;	
+}
+
+void CoaxVisionControl::stabilizationControl(void) {
+	double Dyaw,Dyaw_rate,yaw_control;
+	double Droll,Droll_rate,roll_control;
+	double Dpitch,Dpitch_rate,pitch_control;
+	// yaw error and ctrl
+	Dyaw = imu_y - yaw_des;
+	Dyaw_rate = gyro_ch3 - yaw_rate_des; 
+	yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
+	// roll error and ctrl
+	Droll = imu_r - roll_des;
+	Droll_rate = gyro_ch1 - roll_rate_des;
+	roll_control = kp_roll * Droll + kd_roll * Droll_rate;
+	// pitch error and ctrl
+	Dpitch = imu_p - pitch_des;
+	Dpitch_rate = gyro_ch2 - pitch_rate_des;
+	pitch_control = kp_pitch * Dpitch + kd_pitch * Dpitch_rate;
+	// desired motor & servo output
+	motor1_des = motor_const1+thr_coef1*rc_th-yaw_control;
+	motor2_des = motor_const2+thr_coef2*rc_th+yaw_control;
+	servo1_des = servo1_const + r_rc_coef * (rc_r+rc_trim_r) + roll_control;
+	servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
 }
 
 void CoaxVisionControl::controlPublisher(size_t rate) {
 	ros::Rate loop_rate(rate);
 
-	coax_msgs::CoaxRawControl raw_control;
-	coax_msgs::CoaxControl vision_control;
 	double sum_Yaw_desire = 0;
-	double Dyaw,Dyaw_rate,yaw_control;
-	double Droll,Droll_rate,roll_control;
-	double Dpitch,Dpitch_rate,pitch_control;
-	double motor1_des,motor2_des,servo1_des,servo2_des;
+
 
 	while(ros::ok()) {
 		if ((init_count<100)) {
@@ -282,40 +329,10 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 			INIT_DESIRE = true;
 		}
 		
-		if (INIT_DESIRE) {
-			// yaw error and ctrl
-			Dyaw = imu_y - yaw_des;
-			Dyaw_rate = gyro_ch3 - yaw_rate_des; 
-			yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
-			// roll error and ctrl
-			Droll = imu_r - roll_des;
-			Droll_rate = gyro_ch1 - roll_rate_des;
-			roll_control = kp_roll * Droll + kd_roll * Droll_rate;
-			// pitch error and ctrl
-			Dpitch = imu_p - pitch_des;
-			Dpitch_rate = gyro_ch2 - pitch_rate_des;
-			pitch_control = kp_pitch * Dpitch + kd_pitch * Dpitch_rate;
-			// desired motor & servo output
-			motor1_des = motor_const1+thr_coef1*rc_th-yaw_control;
-			motor2_des = motor_const2+thr_coef2*rc_th+yaw_control;
-			servo1_des = servo1_const + r_rc_coef * (rc_r+rc_trim_r) + roll_control;
-			servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
-			setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
+		if (INIT_DESIRE && rotorReady()) {
+			stabilizationControl();
 		}
-		raw_control.motor1 = motor_up;
-		raw_control.motor2 = motor_lo;
-		raw_control.servo1 = servo_roll;
-		raw_control.servo2 = servo_pitch;
-		//ROS_INFO("servo1 %f servo2 %f",raw_control.servo1,raw_control.servo2);
-		raw_control_pub.publish(raw_control);
-//		ROS_INFO("%10.8f %10.8f",imu_y,gyro_ch1);		
-//		vision_control.roll = rc_r;
-//		vision_control.pitch = rc_p;
-//		vision_control.yaw = rc_y;
-//		vision_control.altitude = rc_th;
-//
-//		vision_control_pub.publish(vision_control);
-
+		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}

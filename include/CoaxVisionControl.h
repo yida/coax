@@ -80,7 +80,8 @@ public:
 	bool setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out);
 
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
-
+	void stabilizationControl(void);
+	bool rotorReady(void);
 	void controlPublisher(size_t rate);
 	
 	bool setRawControl(double motor_up,double motor_lo, double servo_ro,double servo_pi);
@@ -114,6 +115,7 @@ private:
 	int coax_state_age;
 	int raw_control_age;
 	int init_count;
+	int rotor_ready_count;
 	
 	double battery_voltage;
 	
@@ -154,6 +156,11 @@ private:
 	double motor_const2;
 	double servo1_const;
 	double servo2_const;
+
+	double motor1_des;
+	double motor2_des;
+	double servo1_des;
+	double servo2_des;
 
 	double r_rc_coef;
 	double p_rc_coef;
