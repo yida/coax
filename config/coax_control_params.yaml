@@ -2,7 +2,7 @@ altitude:
   base: 0.049
 
 altitudecontrol:
-  proportional: 0.05
+  proportional: -1.0
 
 yawcontrol:
   proportional: 0.030
