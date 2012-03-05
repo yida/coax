@@ -50,6 +50,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,yaw_des(0.0),yaw_rate_des(0.0)
 ,roll_des(0.0),roll_rate_des(0.0)
 ,pitch_des(0.0),pitch_rate_des(0.0)
+,altitude_des(0.0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -75,6 +76,8 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("rollcontrol/differential",kd_roll);
 	n.getParam("pitchcontrol/proportional",kp_pitch);
 	n.getParam("pitchcontrol/differential",kd_pitch);
+	n.getParam("altitude/base",range_base);
+	n.getParam("altitudecontrol/proportional",kp_altitude);
 }
 
 //===================
@@ -297,6 +300,12 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dyaw,Dyaw_rate,yaw_control;
 	double Droll,Droll_rate,roll_control;
 	double Dpitch,Dpitch_rate,pitch_control;
+	double Daltitude,altitude_control;
+
+	altitude_des = range_base + thr_coef1 * rc_th;
+	Daltitude = range_al - altitude_des;
+	altitude_control = kp_altitude * Daltitude;
+
 	// yaw error and ctrl
 	Dyaw = imu_y - yaw_des;
 	Dyaw_rate = gyro_ch3 - yaw_rate_des; 
@@ -310,8 +319,8 @@ void CoaxVisionControl::stabilizationControl(void) {
 	Dpitch_rate = gyro_ch2 - pitch_rate_des;
 	pitch_control = kp_pitch * Dpitch + kd_pitch * Dpitch_rate;
 	// desired motor & servo output
-	motor1_des = motor_const1+thr_coef1*rc_th-yaw_control;
-	motor2_des = motor_const2+thr_coef2*rc_th+yaw_control;
+	motor1_des = motor_const1 - yaw_control + altitude_control;
+	motor2_des = motor_const2 + yaw_control + altitude_control;
 	servo1_des = servo1_const + r_rc_coef * (rc_r+rc_trim_r) + roll_control;
 	servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
 }
@@ -339,6 +348,7 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 			stabilizationControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
+		ROS_INFO("Range %f, ACC %f",range_al,accel_z);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
@@ -354,7 +364,7 @@ int main(int argc, char **argv) {
 	// make sure coax_server has enough time to start
 	ros::Duration(1.5).sleep(); 
 
-	control.configureComm(100, SBS_MODES | SBS_BATTERY | SBS_GYRO | SBS_ACCEL | SBS_CHANNELS | SBS_RPY | SBS_HRANGES);
+	control.configureComm(100, SBS_MODES | SBS_BATTERY | SBS_GYRO | SBS_ACCEL | SBS_CHANNELS | SBS_RPY | SBS_ALTITUDE_ALL);
 	// control.setTimeout(500, 5000);
 
 	control.configureControl(SB_CTRL_MANUAL, SB_CTRL_MANUAL, SB_CTRL_MANUAL, SB_CTRL_MANUAL);

@@ -157,6 +157,8 @@ private:
 	double servo1_const;
 	double servo2_const;
 
+	double range_base;
+
 	double motor1_des;
 	double motor2_des;
 	double servo1_des;
@@ -177,6 +179,7 @@ private:
 	double kd_roll;
 	double kp_pitch;
 	double kd_pitch;
+	double kp_altitude;
 
 	double yaw_des;
 	double yaw_rate_des;
@@ -184,6 +187,7 @@ private:
 	double roll_rate_des;
 	double pitch_des;
 	double pitch_rate_des;
+	double altitude_des;
 
 
 };
