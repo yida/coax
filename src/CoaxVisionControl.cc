@@ -145,7 +145,7 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 				break;
 			}
 
-			if (battery_voltage > 11) {
+			if (battery_voltage < 10.5) {
 				ROS_INFO("Battery Low!!! (%f V) Start denied",battery_voltage);
 				LOW_POWER_DETECTED = true;
 				out.result = -1;
@@ -164,13 +164,17 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 			init_count = 0;
 			rotor_ready_count = 0;
 			CONTROL_MODE = CONTROL_START;
+			motor1_des = 0;
+			motor2_des = 0;
+			servo1_des = 0;
+			servo2_des = 0;
 			break;
 
 		case 9:
-			motor_up = 0;
-			motor_lo = 0;
-			servo_roll = 0;
-			servo_pitch = 0;
+			motor1_des = 0;
+			motor2_des = 0;
+			servo1_des = 0;
+			servo2_des = 0;
 			roll_trim = 0;
 			pitch_trim = 0;
 			
@@ -273,15 +277,17 @@ bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo
 }
 
 bool CoaxVisionControl::rotorReady(void) {
-	if ((rotor_ready_count >= 0) && (rotor_ready_count <= 500)) 
+	if (rotor_ready_count < 0) return false;
+	if (rotor_ready_count <= 300) 
 		rotor_ready_count++;
-	if (rotor_ready_count < 200) {
-		motor1_des = rotor_ready_count / 200 * motor_const1;
+	if (rotor_ready_count < 150) {
+		motor1_des = rotor_ready_count / 150 * motor_const1;
+		motor2_des = 0;
 		return false;
 	}
-	if (rotor_ready_count < 400) {
+	else if (rotor_ready_count < 300) {
 		motor1_des = motor_const1;
-		motor2_des = rotor_ready_count / 200 * motor_const2;
+		motor2_des = (rotor_ready_count - 150) / 150 * motor_const2;
 		return false;
 	}
 	return true;	
