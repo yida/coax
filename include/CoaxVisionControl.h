@@ -55,11 +55,14 @@ private:
 
   void proc(const sensor_msgs::ImageConstPtr& msg);
 	// Flip Searching Symmetric Axis
-	std::deque<SymAxis> SortedAxis;
-	std::deque<SymAxis> PeakAxis;
+	deque<SymAxis> SortedAxis;
+	deque<SymAxis> PeakAxis;
+	vector<double> LastOpicFlow;
+	bool FIRST_FRAME;
 	size_t width;
 	size_t height;
 	size_t symPos;
+	size_t shift;
 };
 
 

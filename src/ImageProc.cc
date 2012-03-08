@@ -24,9 +24,11 @@ ImageProc::ImageProc(ros::NodeHandle& nh_)
 ,Sub_Image(it_.subscribe("image_in", 1 ,&ImageProc::proc, this))
 ,Pub_Image(it_.advertise("image_proc", 1))
 ,Debug_Msgs(nh_.advertise<coax_vision::ImageDebug>("image_debug",100))
+,FIRST_FRAME(true)
 ,width(0)
 ,height(0)
 ,symPos(0)
+,shift(0)
 {
 }
 
@@ -111,6 +113,38 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 		AxisErr.push_back(Temp);
 	}
 
+	// optic flow
+	vector<double> OpticFlow;
+	double heightSum = 0;
+	for (size_t col = 0; col < frame.width; col++) {
+		heightSum = 0;
+		for (size_t row = 0; row < frame.height; row++) {
+			heightSum += frame.data[row * frame.width + col];	
+		}
+		OpticFlow.push_back(heightSum/frame.height);
+	}
+	
+	double leftshift, rightshift;
+	double sumNom, sumDenom;
+	double shifitsize = 1;
+	if (FIRST_FRAME) {
+		shift = 0;
+		LastOpicFlow = OpticFlow;
+		FIRST_FRAME = false;
+	}
+	else {
+		sumNom = 0;
+		sumDenom = 0;
+		for (size_t iter = 0; iter < OpticFlow.size(); iter++) {
+			leftshift = ((iter-shifitsize)>0)? LastOpicFlow[iter-shifitsize] : 0;
+			rightshift = ((iter+shifitsize)<OpticFlow.size())? LastOpicFlow[iter+shifitsize] : 0;
+			sumNom += (OpticFlow[iter]-LastOpicFlow[iter]) * (leftshift-rightshift);
+			sumDenom += pow(leftshift-rightshift,2);
+		}
+		shift = 2 * shifitsize * sumNom / sumDenom;
+	}
+
+	//
 	// Integral Image Based, abs(sum(left)-sum(right))
 //	size_t shift = (frame.height - 1) * frame.width;
 //	double Left_Sum = 0;
