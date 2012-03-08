@@ -62,7 +62,7 @@ private:
 	size_t width;
 	size_t height;
 	size_t symPos;
-	size_t shift;
+	double shift;
 };
 
 
@@ -202,6 +202,7 @@ private:
 	double kp_altitude;
 
 	double kp_imgyaw;
+	double kp_imgroll;
 
 	double yaw_des;
 	double yaw_rate_des;

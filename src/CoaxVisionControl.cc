@@ -85,6 +85,7 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("altitude/base",range_base);
 	n.getParam("altitudecontrol/proportional",kp_altitude);
 	n.getParam("imageyawcontrol/proportional",kp_imgyaw);
+	n.getParam("imagerollcontrol/proportional",kp_imgroll);
 
 	imu_al = range_base;
 }
@@ -385,16 +386,45 @@ void CoaxVisionControl::stabilizationControl(void) {
 
 void CoaxVisionControl::visionControl(void) {
 	double DyawIMG, yawIMG_control;
-	double centerIMG = 32;
+	double centerIMG = 30;
 	SymAxis Axis;
 	if (image.SortedAxis.size() == 0)
 		return;
+//	if (image.PeakAxis.size() != 0) {
+//		size_t	peakmid = image.PeakAxis.size()/2;
+//		std::cout << "first filter" << std::endl;
+//		deque<SymAxis> Peak2;
+//		for (size_t cnt = 1; cnt < image.PeakAxis.size()-1; cnt++) {
+//			if ((image.PeakAxis[cnt].value > image.PeakAxis[cnt-1].value) &&
+//					(image.PeakAxis[cnt].value > image.PeakAxis[cnt+1].value)) {
+//						std::cout << image.PeakAxis[cnt].axis << ' ';
+//						Peak2.push_back(image.PeakAxis[cnt]);
+//			}
+//		}
+//		std::cout << std::endl;
+//		if (Peak2.size()>0) {
+//			for (size_t cnt = 1; cnt < Peak2.size()-1; cnt++) {
+//				if ((Peak2[cnt].value > Peak2[cnt-1].value) &&
+//						(Peak2[cnt].value > Peak2[cnt+1].value)) {
+//							std::cout << Peak2[cnt].axis << ' ';
+//				}
+//			}
+//		}
+//		std::cout << std::endl;
+//		std::cout << image.PeakAxis[peakmid-2].axis << ' '; // << image.PeakAxis[peakmid-2].value << ' ';
+//		std::cout << image.PeakAxis[peakmid-1].axis << ' '; // << image.PeakAxis[peakmid-1].value << ' ';
+//		std::cout << image.PeakAxis[peakmid].axis << ' '; // << image.PeakAxis[peakmid].value << ' ';
+//		std::cout << image.PeakAxis[peakmid+1].axis	<< ' '; // << image.PeakAxis[peakmid+1].value << ' ';
+//		std::cout << image.PeakAxis[peakmid+2].axis << std::endl; // ' ' << image.PeakAxis[peakmid+2].value << std::endl;	
+//		ROS_INFO("Find %d peaks",image.PeakAxis.size());
+//	}
 
 	Axis = image.SortedAxis.front();
 	DyawIMG = Axis.axis - centerIMG;
 	yawIMG_control = kp_imgyaw * DyawIMG;
 	motor1_des += yawIMG_control;
 	motor2_des -= yawIMG_control; 
+	servo1_des += kp_imgroll * image.shift;
 //		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
 }
 

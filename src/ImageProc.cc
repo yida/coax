@@ -77,12 +77,12 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 
 	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
 	vector<SymAxis> AxisErr;
-	
+/*	
 	// Integral Image Based kernel scan
 	size_t kerSize = 24; // Based on Matlab Result
 	size_t Aidx,Bidx,Cidx,Didx;
-	uint32_t A,B,C,D,LeftSum,RightSum;
-	int accDiff = 0;
+	double A,B,C,D,LeftSum,RightSum;
+	double accDiff = 0;
 	for (size_t col = 0; col < (frame.width - kerSize); col++) {
 		accDiff = 0;
 		for (size_t row = 0; row < (frame.height - kerSize); row++) {
@@ -112,6 +112,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 		Axis.push(Temp);
 		AxisErr.push_back(Temp);
 	}
+*/
 
 	// optic flow
 	vector<double> OpticFlow;
@@ -143,7 +144,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 		}
 		shift = 2 * shifitsize * sumNom / sumDenom;
 	}
-
+//	ROS_INFO("Lateral Shift %f",shift);
 	//
 	// Integral Image Based, abs(sum(left)-sum(right))
 //	size_t shift = (frame.height - 1) * frame.width;
@@ -163,27 +164,27 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 //	}
 
 	// Kernel based , L1
-//	size_t width = 0;
-//	double Sum_L1_Norm = 0;	
-//	size_t shift = 0;
-//	size_t Left_Cur = 0;
-//	size_t Right_Cur = 0; 
-//	double L1_Norm = 0;
-//	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
-//		width = min(cnt,frame.width-1-cnt);
-//		Sum_L1_Norm = 0;
-//		for (size_t row = 0; row < frame.height; row++) {
-//			shift = row * frame.width;
-//			for (size_t cur = 1; cur <= width; cur++) {
-//				Left_Cur = cnt - cur;
-//				Right_Cur = cnt + cur;
-//				L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
-//				Sum_L1_Norm += L1_Norm;
-//			}
-//		}
-//		SymAxis temp_axis = {cnt, Sum_L1_Norm};
-//		Axis.push(temp_axis);
-//	}
+	size_t width = 0;
+	double Sum_L1_Norm = 0;	
+	size_t shift = 0;
+	size_t Left_Cur = 0;
+	size_t Right_Cur = 0; 
+	double L1_Norm = 0;
+	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
+		width = min(cnt,frame.width-1-cnt);
+		Sum_L1_Norm = 0;
+		for (size_t row = 0; row < frame.height; row++) {
+			shift = row * frame.width;
+			for (size_t cur = 1; cur <= width; cur++) {
+				Left_Cur = cnt - cur;
+				Right_Cur = cnt + cur;
+				L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
+				Sum_L1_Norm += L1_Norm;
+			}
+		}
+		SymAxis temp_axis = {cnt, Sum_L1_Norm};
+		Axis.push(temp_axis);
+	}
 	
 //			
 //	SymAxis Best = Axis.top();
@@ -199,13 +200,14 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 		Axis.pop();
 	}
 	
-	for (size_t iter = 1; iter < AxisErr.size()-1; iter++) {
-		if ((AxisErr[iter].value > AxisErr[iter-1].value) && 
-				(AxisErr[iter].value > AxisErr[iter+1].value)) {
-			PeakAxis.push_back(AxisErr[iter]);	
-		}
-	}
-	
+//	deque<SymAxis> PeakA;		
+//	for (size_t iter = 1; iter < AxisErr.size()-1; iter++) {
+//		if ((AxisErr[iter].value > AxisErr[iter-1].value) && 
+//				(AxisErr[iter].value > AxisErr[iter+1].value)) {
+//			PeakA.push_back(AxisErr[iter]);	
+//		}
+//	}
+//	PeakAxis = PeakA;
 	// Generate Debug Message
 	coax_vision::ImageDebug debugMsg;
 	debugMsg.header.stamp = ros::Time::now();
