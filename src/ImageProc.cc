@@ -73,8 +73,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 			Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
   }
 
-	// Flip Searching Symmetric Axis
-	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
+
 	
 	// Integral Image Based, abs(sum(left)-sum(right))
 //	size_t shift = (frame.height - 1) * frame.width;
@@ -116,12 +115,12 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 		Axis.push(temp_axis);
 	}
 	
-			
-	SymAxis Best = Axis.top();
-	Axis.pop();
-	SymAxis Second = Axis.top();
-	Axis.pop();
-	SymAxis Third = Axis.top();
+//			
+//	SymAxis Best = Axis.top();
+//	Axis.pop();
+//	SymAxis Second = Axis.top();
+//	Axis.pop();
+//	SymAxis Third = Axis.top();
 	//ROS_INFO("Axis %d",Best.axis);
 	
 	// Generate Debug Message
@@ -129,9 +128,9 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	debugMsg.header.stamp = ros::Time::now();
 	debugMsg.header.seq = 0;
 	debugMsg.header.frame_id = "image_debug";
-	debugMsg.BestAxis = Best.axis;
-	debugMsg.SecondAxis = Second.axis;
-	debugMsg.ThirdAxis = Third.axis;
+//	debugMsg.BestAxis = Best.axis;
+//	debugMsg.SecondAxis = Second.axis;
+//	debugMsg.ThirdAxis = Third.axis;
 	Debug_Msgs.publish(debugMsg);	
 	Pub_Image.publish(frame);
 }

@@ -22,7 +22,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 
 ,raw_control_pub(node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1))
 ,vision_control_pub(node.advertise<coax_msgs::CoaxControl>("visioncontrol",1))
-
+,image(cImageProc)
 ,LOW_POWER_DETECTED(false)
 ,CONTROL_MODE(CONTROL_LANDED)
 ,FIRST_START(false)
@@ -405,6 +405,9 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 			stabilizationControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
+
+		SymAxis Axis = image.Axis.top();
+		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}

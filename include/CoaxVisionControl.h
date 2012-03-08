@@ -54,6 +54,8 @@ private:
 	ros::Publisher Debug_Msgs;
 
   void proc(const sensor_msgs::ImageConstPtr& msg);
+	// Flip Searching Symmetric Axis
+	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
 
 	size_t width;
 	size_t height;
@@ -101,6 +103,8 @@ private:
 
 	vector<ros::ServiceServer> set_nav_mode;
 	vector<ros::ServiceServer> set_control_mode;
+
+	ImageProc& image;
 
 	bool LOW_POWER_DETECTED;
 
