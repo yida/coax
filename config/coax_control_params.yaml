@@ -1,3 +1,6 @@
+imageyawcontrol:
+  proportional: 0.002
+
 altitude:
   base: 0.049
 

@@ -84,6 +84,7 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("pitchcontrol/differential",kd_pitch);
 	n.getParam("altitude/base",range_base);
 	n.getParam("altitudecontrol/proportional",kp_altitude);
+	n.getParam("imageyawcontrol/proportional",kp_imgyaw);
 
 	imu_al = range_base;
 }
@@ -382,6 +383,21 @@ void CoaxVisionControl::stabilizationControl(void) {
 	servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
 }
 
+void CoaxVisionControl::visionControl(void) {
+	double DyawIMG, yawIMG_control;
+	double centerIMG = 32;
+	SymAxis Axis;
+	if (image.SortedAxis.size() == 0)
+		return;
+
+	Axis = image.SortedAxis.front();
+	DyawIMG = Axis.axis - centerIMG;
+	yawIMG_control = kp_imgyaw * DyawIMG;
+	motor1_des += yawIMG_control;
+	motor2_des -= yawIMG_control; 
+//		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
+}
+
 void CoaxVisionControl::controlPublisher(size_t rate) {
 	ros::Rate loop_rate(rate);
 
@@ -402,12 +418,12 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 		}
 		
 		if (INIT_DESIRE && rotorReady()) {
+
 			stabilizationControl();
+			visionControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 
-		SymAxis Axis = image.Axis.top();
-		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
 		ros::spinOnce();
 		loop_rate.sleep();
 	}

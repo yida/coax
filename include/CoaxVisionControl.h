@@ -55,8 +55,7 @@ private:
 
   void proc(const sensor_msgs::ImageConstPtr& msg);
 	// Flip Searching Symmetric Axis
-	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
-
+	std::deque<SymAxis> SortedAxis;
 	size_t width;
 	size_t height;
 	size_t symPos;
@@ -83,6 +82,7 @@ public:
 
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
 	void stabilizationControl(void);
+	void visionControl(void);
 	bool rotorReady(void);
 	void controlPublisher(size_t rate);
 	
@@ -196,6 +196,8 @@ private:
 	double kp_pitch;
 	double kd_pitch;
 	double kp_altitude;
+
+	double kp_imgyaw;
 
 	double yaw_des;
 	double yaw_rate_des;

@@ -73,7 +73,7 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 			Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
   }
 
-
+	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
 	
 	// Integral Image Based, abs(sum(left)-sum(right))
 //	size_t shift = (frame.height - 1) * frame.width;
@@ -122,6 +122,12 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 //	Axis.pop();
 //	SymAxis Third = Axis.top();
 	//ROS_INFO("Axis %d",Best.axis);
+	
+	SortedAxis.clear();
+	while (!Axis.empty()) {
+		SortedAxis.push_back(Axis.top());
+		Axis.pop();
+	}
 	
 	// Generate Debug Message
 	coax_vision::ImageDebug debugMsg;
