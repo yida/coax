@@ -26,23 +26,29 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,LOW_POWER_DETECTED(false)
 ,CONTROL_MODE(CONTROL_LANDED)
 ,FIRST_START(false)
+,FIRST_STATE(true)
 ,FIRST_LANDING(false)
 ,FIRST_HOVER(false)
 ,INIT_DESIRE(false)
+,INIT_IMU(false)
 ,coax_nav_mode(0)
 ,coax_control_mode(0)
 ,coax_state_age(0)
 ,raw_control_age(0)
 ,init_count(0)
+,init_imu_count(0)
 ,rotor_ready_count(-1)
+,last_state_time(0.0)
 ,battery_voltage(12.22)
-,imu_y(0.0),imu_r(0.0),imu_p(0.0)
+,init_imu_x(0.0),init_imu_y(0.0),init_imu_z(0.0)
+,imu_y(0.0),imu_r(0.0),imu_p(0.0),imu_al(0.0)
 ,range_al(0.0)
 ,rc_th(0.0),rc_y(0.0),rc_r(0.0),rc_p(0.0)
 ,rc_trim_th(0.0),rc_trim_y(0.104),rc_trim_r(0.054),rc_trim_p(0.036)
 ,img_th(0.0),img_y(0.0),img_r(0.0),img_p(0.0)
 ,gyro_ch1(0.0),gyro_ch2(0.0),gyro_ch3(0.0)
 ,accel_x(0.0),accel_y(0.0),accel_z(0.0)
+,pos_z(0.0),vel_z(0.0)
 ,motor_up(0),motor_lo(0)
 ,servo_roll(0),servo_pitch(0)
 ,roll_trim(0),pitch_trim(0)
@@ -78,6 +84,8 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("pitchcontrol/differential",kd_pitch);
 	n.getParam("altitude/base",range_base);
 	n.getParam("altitudecontrol/proportional",kp_altitude);
+
+	imu_al = range_base;
 }
 
 //===================
@@ -200,9 +208,41 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 //==============
 
 void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
+	double cur_state_time = 0;
+	double time_duration = 0;
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
+	if (FIRST_STATE) {
+		last_state_time = ros::Time::now().toSec();
+		FIRST_STATE = false;
+		ROS_INFO("First Time Stamp: %f",last_state_time);
+		return;
+	}	
+
+	if (!INIT_IMU) {
+		if (init_imu_count < 200) {
+			init_imu_count++;
+			init_imu_x += message->accel[0];
+			init_imu_y += message->accel[1];
+			init_imu_z += message->accel[2];
+			return;
+		}
+		else {
+			init_imu_x /= 200;
+			init_imu_y /= 200;
+			init_imu_z /= 200;	
+			INIT_IMU = true;
+			ROS_INFO("Acc Initialized,count %d x: %f y: %f z: %f",init_imu_count,init_imu_x,init_imu_y,init_imu_z);
+			return;
+		}
+	}
+
+	cur_state_time = ros::Time::now().toSec();
+	time_duration = cur_state_time - last_state_time;
+//	ROS_INFO("Second since last state observed %f",time_duration);
+
+
 	if ((battery_voltage < 10.30) && !LOW_POWER_DETECTED){
 		ROS_INFO("Battery Low!!! (%fV) Landing initialized",battery_voltage);
 		LOW_POWER_DETECTED = true;
@@ -213,11 +253,13 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	imu_p = message->pitch;
 
 	range_al = message->zfiltered;
+	ROS_INFO("Altitude from sonar %f",range_al);
 
 	rc_th = message->rcChannel[0];
 	rc_y = message->rcChannel[2];
 	rc_r = message->rcChannel[4];
 	rc_p = message->rcChannel[6];
+
 //	rc_trim_th = message->rcChannel[1];
 //	rc_trim_y = message->rcChannel[3];
 //	rc_trim_r = message->rcChannel[5];
@@ -227,10 +269,22 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	gyro_ch2 = message->gyro[1];
 	gyro_ch3 = message->gyro[2];
 
-	accel_x = message->accel[0];
-	accel_y = message->accel[1];
-	accel_z = message->accel[2];
+	accel_x = message->accel[0] - init_imu_x;
+	accel_y = message->accel[1] - init_imu_y;
+	accel_z = message->accel[2] - init_imu_z;
+//	double normalized_z = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
+	pos_z = pos_z + vel_z * time_duration - 0.5 * time_duration * time_duration * accel_z;
+	vel_z = vel_z - time_duration * accel_z;
+//	ROS_INFO("Pos %f Vel %f",pos_z,vel_z);
+	
 
+//	ROS_INFO("raw accX %f accY %f accZ %f, normalized accZ %f",accel_x,accel_y,accel_z,normalized_z);	
+//	ROS_INFO("AccX %f AccY %f AccZ %f",accel_x,accel_y,accel_z);
+	imu_al += (accel_z) * time_duration;
+	last_state_time = cur_state_time;
+//	ROS_INFO("Acc Z with gravity %f",accel_z);
+//	ROS_INFO("altitude integrated from acc: %f",imu_al);
+	return;
 }
 
 bool CoaxVisionControl::setRawControl(double motor1, double motor2, double servo1, double servo2) {
@@ -300,12 +354,15 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dyaw,Dyaw_rate,yaw_control;
 	double Droll,Droll_rate,roll_control;
 	double Dpitch,Dpitch_rate,pitch_control;
-	double Daltitude,altitude_control;
+	double altitude_control; //,Daltitude;
 
 	altitude_des = range_base + thr_coef1 * rc_th;
-	Daltitude = range_al - altitude_des;
-	altitude_control = thr_coef1 * rc_th; //kp_altitude * Daltitude;
-	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
+	if (range_al < 0.25)
+		Daltitude = -altitude_des;
+	else
+		Daltitude = range_al - altitude_des;
+	altitude_control = kp_altitude * Daltitude;
+//	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
 	Dyaw = imu_y - yaw_des;
 	Dyaw_rate = gyro_ch3 - yaw_rate_des; 

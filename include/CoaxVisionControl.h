@@ -106,22 +106,31 @@ private:
 
 	int CONTROL_MODE;
 	bool FIRST_START;
+	bool FIRST_STATE;
 	bool FIRST_LANDING;
 	bool FIRST_HOVER;
 	bool INIT_DESIRE;
+	bool INIT_IMU;
 
 	bool coax_nav_mode;
 	bool coax_control_mode;
 	int coax_state_age;
 	int raw_control_age;
 	int init_count;
+	int init_imu_count;
 	int rotor_ready_count;
+	double last_state_time;
 	
 	double battery_voltage;
 	
+	double init_imu_x;
+	double init_imu_y;
+	double init_imu_z;
+
 	double imu_y; // imu yaw
 	double imu_r; // imu roll 
 	double imu_p; // imu pitch
+	double imu_al; // altitude by integrate imu
 	double range_al; // range altitude
 
 	double rc_th; // rc throttle
@@ -144,6 +153,9 @@ private:
 	double accel_x;
 	double accel_y;
 	double accel_z; 
+
+	double pos_z;
+	double vel_z;
 
 	double motor_up;
 	double motor_lo;
