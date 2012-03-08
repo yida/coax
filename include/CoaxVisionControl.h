@@ -56,6 +56,7 @@ private:
   void proc(const sensor_msgs::ImageConstPtr& msg);
 	// Flip Searching Symmetric Axis
 	std::deque<SymAxis> SortedAxis;
+	std::deque<SymAxis> PeakAxis;
 	size_t width;
 	size_t height;
 	size_t symPos;

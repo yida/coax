@@ -74,7 +74,43 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
   }
 
 	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
+	vector<SymAxis> AxisErr;
 	
+	// Integral Image Based kernel scan
+	size_t kerSize = 24; // Based on Matlab Result
+	size_t Aidx,Bidx,Cidx,Didx;
+	uint32_t A,B,C,D,LeftSum,RightSum;
+	int accDiff = 0;
+	for (size_t col = 0; col < (frame.width - kerSize); col++) {
+		accDiff = 0;
+		for (size_t row = 0; row < (frame.height - kerSize); row++) {
+			// Left part
+			Aidx = (row-1) * frame.width + (col-1);
+			Bidx = (row-1) * frame.width + (col+kerSize/2-1);
+			Cidx = (row+kerSize-1) * frame.width + (col+kerSize/2-1);
+			Didx = (row+kerSize-1) * frame.width + (col-1);
+			A = ((row == 0) || (col == 0))? 0 : Integral_Image[Aidx];
+			B = (row == 0)? 0 : Integral_Image[Bidx];
+			C = Integral_Image[Cidx];
+			D = (col == 0)? 0 : Integral_Image[Didx];
+			LeftSum = A + C - B - D;
+			// Right part
+			Aidx = Bidx;
+			Didx = Cidx;
+			Bidx = (row-1) * frame.width + (col+kerSize-1);
+			Cidx = (row+kerSize-1) * frame.width + (col+kerSize-1);
+			A = (row == 0)? 0 : Integral_Image[Aidx];
+			B = (row == 0)? 0 : Integral_Image[Bidx];
+			C = Integral_Image[Cidx];
+			D = Integral_Image[Didx];
+			RightSum = A + C - B - D;
+			accDiff += abs(LeftSum - RightSum);
+		}
+		SymAxis Temp = {col+1,accDiff/frame.height};
+		Axis.push(Temp);
+		AxisErr.push_back(Temp);
+	}
+
 	// Integral Image Based, abs(sum(left)-sum(right))
 //	size_t shift = (frame.height - 1) * frame.width;
 //	double Left_Sum = 0;
@@ -93,27 +129,27 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 //	}
 
 	// Kernel based , L1
-	size_t width = 0;
-	double Sum_L1_Norm = 0;	
-	size_t shift = 0;
-	size_t Left_Cur = 0;
-	size_t Right_Cur = 0; 
-	double L1_Norm = 0;
-	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
-		width = min(cnt,frame.width-1-cnt);
-		Sum_L1_Norm = 0;
-		for (size_t row = 0; row < frame.height; row++) {
-			shift = row * frame.width;
-			for (size_t cur = 1; cur <= width; cur++) {
-				Left_Cur = cnt - cur;
-				Right_Cur = cnt + cur;
-				L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
-				Sum_L1_Norm += L1_Norm;
-			}
-		}
-		SymAxis temp_axis = {cnt, Sum_L1_Norm};
-		Axis.push(temp_axis);
-	}
+//	size_t width = 0;
+//	double Sum_L1_Norm = 0;	
+//	size_t shift = 0;
+//	size_t Left_Cur = 0;
+//	size_t Right_Cur = 0; 
+//	double L1_Norm = 0;
+//	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
+//		width = min(cnt,frame.width-1-cnt);
+//		Sum_L1_Norm = 0;
+//		for (size_t row = 0; row < frame.height; row++) {
+//			shift = row * frame.width;
+//			for (size_t cur = 1; cur <= width; cur++) {
+//				Left_Cur = cnt - cur;
+//				Right_Cur = cnt + cur;
+//				L1_Norm = abs(frame.data[shift+Left_Cur] - frame.data[shift+Right_Cur]);
+//				Sum_L1_Norm += L1_Norm;
+//			}
+//		}
+//		SymAxis temp_axis = {cnt, Sum_L1_Norm};
+//		Axis.push(temp_axis);
+//	}
 	
 //			
 //	SymAxis Best = Axis.top();
@@ -127,6 +163,13 @@ void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg)
 	while (!Axis.empty()) {
 		SortedAxis.push_back(Axis.top());
 		Axis.pop();
+	}
+	
+	for (size_t iter = 1; iter < AxisErr.size()-1; iter++) {
+		if ((AxisErr[iter].value > AxisErr[iter-1].value) && 
+				(AxisErr[iter].value > AxisErr[iter+1].value)) {
+			PeakAxis.push_back(AxisErr[iter]);	
+		}
 	}
 	
 	// Generate Debug Message
