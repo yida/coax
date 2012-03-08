@@ -253,7 +253,7 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	imu_p = message->pitch;
 
 	range_al = message->zfiltered;
-	ROS_INFO("Altitude from sonar %f",range_al);
+//	ROS_INFO("Altitude from sonar %f",range_al);
 
 	rc_th = message->rcChannel[0];
 	rc_y = message->rcChannel[2];
@@ -354,14 +354,14 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dyaw,Dyaw_rate,yaw_control;
 	double Droll,Droll_rate,roll_control;
 	double Dpitch,Dpitch_rate,pitch_control;
-	double altitude_control; //,Daltitude;
+	double altitude_control,Daltitude;
 
 	altitude_des = range_base + thr_coef1 * rc_th;
 	if (range_al < 0.25)
-		Daltitude = -altitude_des;
+		Daltitude = 0;
 	else
 		Daltitude = range_al - altitude_des;
-	altitude_control = kp_altitude * Daltitude;
+	altitude_control = altitude_des + kp_altitude * Daltitude;
 //	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
 	Dyaw = imu_y - yaw_des;
