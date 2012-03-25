@@ -366,9 +366,12 @@ void CoaxVisionControl::stabilizationControl(void) {
 	altitude_control = altitude_des + kp_altitude * Daltitude;
 //	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
+	yaw_des += yaw_coef1*(rc_y+rc_trim_y);
+	ROS_INFO("desired yaw %f", yaw_des);
 	Dyaw = imu_y - yaw_des;
 	Dyaw_rate = gyro_ch3 - yaw_rate_des; 
-	yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; // yaw_coef1*(rc_y+rc_trim_y);
+	yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; 
+//	ROS_INFO("rc yaw %f", yaw_coef1*(rc_y+rc_trim_y));
 	// roll error and ctrl
 	Droll = imu_r - roll_des;
 	Droll_rate = gyro_ch1 - roll_rate_des;
@@ -450,7 +453,7 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 		if (INIT_DESIRE && rotorReady()) {
 
 			stabilizationControl();
-			visionControl();
+//			visionControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
 
