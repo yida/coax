@@ -48,6 +48,8 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,img_th(0.0),img_y(0.0),img_r(0.0),img_p(0.0)
 ,gyro_ch1(0.0),gyro_ch2(0.0),gyro_ch3(0.0)
 ,accel_x(0.0),accel_y(0.0),accel_z(0.0)
+,gyro_ch1_init(0.0),gyro_ch2_init(0.0),gyro_ch3_init(0.0)
+,accel_x_init(0.0),accel_y_init(0.0),accel_z_init(0.0)
 ,pos_z(0.0),vel_z(0.0)
 ,motor_up(0),motor_lo(0)
 ,servo_roll(0),servo_pitch(0)
@@ -57,6 +59,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 ,roll_des(0.0),roll_rate_des(0.0)
 ,pitch_des(0.0),pitch_rate_des(0.0)
 ,altitude_des(0.0)
+,z(0.0),z_v(0.0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -222,29 +225,6 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 		return;
 	}	
 
-	if (!INIT_IMU) {
-		if (init_imu_count < 200) {
-			init_imu_count++;
-			init_imu_x += message->accel[0];
-			init_imu_y += message->accel[1];
-			init_imu_z += message->accel[2];
-			return;
-		}
-		else {
-			init_imu_x /= 200;
-			init_imu_y /= 200;
-			init_imu_z /= 200;	
-			INIT_IMU = true;
-			ROS_INFO("Acc Initialized,count %d x: %f y: %f z: %f",init_imu_count,init_imu_x,init_imu_y,init_imu_z);
-			return;
-		}
-	}
-
-	cur_state_time = ros::Time::now().toSec();
-	time_duration = cur_state_time - last_state_time;
-//	ROS_INFO("Second since last state observed %f",time_duration);
-
-
 	if ((battery_voltage < 10.30) && !LOW_POWER_DETECTED){
 		ROS_INFO("Battery Low!!! (%fV) Landing initialized",battery_voltage);
 		LOW_POWER_DETECTED = true;
@@ -255,37 +235,19 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	imu_p = message->pitch;
 
 	range_al = message->zfiltered;
-//	ROS_INFO("Altitude from sonar %f",range_al);
 
 	rc_th = message->rcChannel[0];
 	rc_y = message->rcChannel[2];
 	rc_r = message->rcChannel[4];
 	rc_p = message->rcChannel[6];
 
-//	rc_trim_th = message->rcChannel[1];
-//	rc_trim_y = message->rcChannel[3];
-//	rc_trim_r = message->rcChannel[5];
-//	rc_trim_p = message->rcChannel[7];
-
 	gyro_ch1 = message->gyro[0];
 	gyro_ch2 = message->gyro[1];
 	gyro_ch3 = message->gyro[2];
 
-	accel_x = message->accel[0] - init_imu_x;
-	accel_y = message->accel[1] - init_imu_y;
-	accel_z = message->accel[2] - init_imu_z;
-//	double normalized_z = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
-	pos_z = pos_z + vel_z * time_duration - 0.5 * time_duration * time_duration * accel_z;
-	vel_z = vel_z - time_duration * accel_z;
-//	ROS_INFO("Pos %f Vel %f",pos_z,vel_z);
-	
-
-//	ROS_INFO("raw accX %f accY %f accZ %f, normalized accZ %f",accel_x,accel_y,accel_z,normalized_z);	
-//	ROS_INFO("AccX %f AccY %f AccZ %f",accel_x,accel_y,accel_z);
-	imu_al += (accel_z) * time_duration;
-	last_state_time = cur_state_time;
-//	ROS_INFO("Acc Z with gravity %f",accel_z);
-//	ROS_INFO("altitude integrated from acc: %f",imu_al);
+	accel_x = message->accel[0];// - init_imu_x;
+	accel_y = message->accel[1];// - init_imu_y;
+	accel_z = message->accel[2];// - init_imu_z;
 	return;
 }
 
@@ -431,6 +393,23 @@ void CoaxVisionControl::visionControl(void) {
 //		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
 }
 
+void CoaxVisionControl::imuAnalysis(void) {
+//		ROS_INFO("acc Z %f", accel_z + gravity);
+	double currentTime = ros::Time::now().toSec();
+	double deltaT = currentTime - last_state_time;
+//	ROS_INFO("Delta Time %f", deltaT);
+	last_state_time = currentTime;
+
+	double curAccZ = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
+	curAccZ -= gravity;	
+	//curAccZ = (abs(curAccZ)>0.1)? curAccZ : 0;
+//	ROS_INFO("curAccZ: %f", curAccZ);
+	z = z + deltaT * z_v + 0.5 * deltaT * deltaT * curAccZ;
+	z_v = z_v + deltaT * curAccZ; 	
+	ROS_INFO("AccZ %f Z: %f, Z_V: %f",curAccZ,z, z_v);
+	
+}
+
 void CoaxVisionControl::controlPublisher(size_t rate) {
 	ros::Rate loop_rate(rate);
 
@@ -438,24 +417,47 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 
 
 	while(ros::ok()) {
-		if ((init_count<100)) {
+		int init_iters = 1000;
+		if ((init_count<init_iters)) {
 			sum_Yaw_desire = sum_Yaw_desire + imu_y;
+			gyro_ch1_init = gyro_ch1_init + gyro_ch1;
+			gyro_ch2_init = gyro_ch2_init + gyro_ch2;
+			gyro_ch3_init = gyro_ch3_init + gyro_ch3;
+			accel_x_init = accel_x_init + accel_x;
+			accel_y_init = accel_y_init + accel_y;
+			accel_z_init = accel_z_init + accel_z;
 			init_count ++;
 		}
 		else if (!INIT_DESIRE) {
-			yaw_des = sum_Yaw_desire / 100;		
+			yaw_des = sum_Yaw_desire / init_iters;		
 			ROS_INFO("Initiated Desired Yaw %f",yaw_des);
+			gyro_ch1_init /= init_iters;
+			gyro_ch2_init /= init_iters;
+			gyro_ch3_init /= init_iters;
+			accel_x_init /= init_iters;
+			accel_y_init /= init_iters;
+			accel_z_init /= init_iters;
+			gravity = sqrt(pow(accel_x_init,2)+pow(accel_y_init,2)+pow(accel_z_init,2));
+			last_state_time = ros::Time::now().toSec();
+			ROS_INFO("Init Gyro Value: %f %f %f", gyro_ch1_init, gyro_ch2_init, gyro_ch3_init);
+			ROS_INFO("Init Acce Value: %f %f %f with Gravity %f", 
+								accel_x_init, accel_y_init, accel_z_init, gravity);
 			ROS_INFO("Current Battery Voltage %f",battery_voltage);
 			sum_Yaw_desire = 0;
 			INIT_DESIRE = true;
 		}
+
+		if (INIT_DESIRE) {
+			imuAnalysis();
+		}
 		
 		if (INIT_DESIRE && rotorReady()) {
-
 			stabilizationControl();
 //			visionControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
+
+
 
 		ros::spinOnce();
 		loop_rate.sleep();

@@ -86,6 +86,7 @@ public:
 
 	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
 	void stabilizationControl(void);
+	void imuAnalysis(void);
 	void visionControl(void);
 	bool rotorReady(void);
 	void controlPublisher(size_t rate);
@@ -161,6 +162,13 @@ private:
 	double accel_x;
 	double accel_y;
 	double accel_z; 
+	double gyro_ch1_init;
+	double gyro_ch2_init;
+	double gyro_ch3_init;
+	double accel_x_init;
+	double accel_y_init;
+	double accel_z_init;
+	double gravity;
 
 	double pos_z;
 	double vel_z;
@@ -211,6 +219,9 @@ private:
 	double pitch_des;
 	double pitch_rate_des;
 	double altitude_des;
+
+	double z;
+	double z_v;
 
 
 };
