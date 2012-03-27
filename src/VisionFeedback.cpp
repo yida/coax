@@ -19,9 +19,9 @@ bool CompareSymAxis::operator() (SymAxis& A1, SymAxis& A2)
 		return false;
 };
 
-ImageProc::ImageProc(ros::NodeHandle& nh_)
+VisionFeedback::VisionFeedback(ros::NodeHandle& nh_)
 :it_(nh_) 
-,Sub_Image(it_.subscribe("image_in", 1 ,&ImageProc::proc, this))
+,Sub_Image(it_.subscribe("image_in", 1 ,&VisionFeedback::proc, this))
 ,Pub_Image(it_.advertise("image_proc", 1))
 ,Debug_Msgs(nh_.advertise<coax_vision::ImageDebug>("image_debug",100))
 ,FIRST_FRAME(true)
@@ -32,10 +32,10 @@ ImageProc::ImageProc(ros::NodeHandle& nh_)
 {
 }
 
-ImageProc::~ImageProc() {
+VisionFeedback::~VisionFeedback() {
 }
 
-void ImageProc::proc(const sensor_msgs::ImageConstPtr& msg) 
+void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg) 
 {
 //	ROS_INFO("frame type %d",msg->step);
 	sensor_msgs::Image frame;

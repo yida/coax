@@ -9,8 +9,6 @@
 #define CONTROL_TRAJECTORY 5 // Follow Trajectory                                                   
 #define CONTROL_LANDING 6 // Landing maneuver
 
-#include <image_transport/image_transport.h>
-#include <sensor_msgs/image_encodings.h>
 #include <std_msgs/String.h>
 
 #include <coax_msgs/CoaxState.h>
@@ -22,57 +20,17 @@
 
 #include <coax_vision/SetNavMode.h>
 #include <coax_vision/SetControlMode.h>
-//#include <coax_vision/CoaxFMdes.h>
+
+#include <VisionFeedback.h>
 
 using namespace std;
 
-struct SymAxis 
+
+class CoaxVisionControl : public VisionFeedback 
 {
-	unsigned short axis;
-	double value;
-};
-
-class CompareSymAxis 
-{
-public:
-	bool operator() (SymAxis& A1, SymAxis& A2); 
-};
-
-class ImageProc {
-	friend class CoaxVisionControl;
-
 
 public:
-  ImageProc(ros::NodeHandle&);
-  ~ImageProc();
-
-private:
-  image_transport::ImageTransport it_;
-  image_transport::Subscriber Sub_Image;
-  image_transport::Publisher Pub_Image;
-	// For debug message
-	ros::Publisher Debug_Msgs;
-
-  void proc(const sensor_msgs::ImageConstPtr& msg);
-	// Flip Searching Symmetric Axis
-	deque<SymAxis> SortedAxis;
-	deque<SymAxis> PeakAxis;
-	vector<double> LastOpicFlow;
-	bool FIRST_FRAME;
-	size_t width;
-	size_t height;
-	size_t symPos;
-	double shift;
-};
-
-
-
-class CoaxVisionControl 
-{
-	friend class ImageProc;
-
-public:
-	CoaxVisionControl(ros::NodeHandle &, ImageProc &);
+	CoaxVisionControl(ros::NodeHandle&);
 	~CoaxVisionControl();
 
 	void loadParams(ros::NodeHandle & n);
@@ -108,8 +66,6 @@ private:
 
 	vector<ros::ServiceServer> set_nav_mode;
 	vector<ros::ServiceServer> set_control_mode;
-
-	ImageProc& image;
 
 	bool LOW_POWER_DETECTED;
 

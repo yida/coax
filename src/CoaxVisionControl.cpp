@@ -12,8 +12,10 @@
 #include <com/sbapi.h>
 #include <CoaxVisionControl.h>
 
-CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImageProc)
-:reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
+CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
+:VisionFeedback(node)
+
+,reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
 ,configure_comm(node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm"))
 ,configure_control(node.serviceClient<coax_msgs::CoaxConfigureControl>("configure_control"))
 ,set_timeout(node.serviceClient<coax_msgs::CoaxSetTimeout>("set_timeout"))
@@ -22,7 +24,6 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node, ImageProc & cImagePr
 
 ,raw_control_pub(node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1))
 ,vision_control_pub(node.advertise<coax_msgs::CoaxControl>("visioncontrol",1))
-,image(cImageProc)
 ,LOW_POWER_DETECTED(false)
 ,CONTROL_MODE(CONTROL_LANDED)
 ,FIRST_START(false)
@@ -213,8 +214,6 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 //==============
 
 void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
-	double cur_state_time = 0;
-	double time_duration = 0;
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
@@ -350,6 +349,7 @@ void CoaxVisionControl::stabilizationControl(void) {
 }
 
 void CoaxVisionControl::visionControl(void) {
+/*
 	double DyawIMG, yawIMG_control;
 	double centerIMG = 30;
 	SymAxis Axis;
@@ -391,6 +391,7 @@ void CoaxVisionControl::visionControl(void) {
 	motor2_des -= yawIMG_control; 
 	servo1_des += kp_imgroll * image.shift;
 //		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
+*/
 }
 
 void CoaxVisionControl::imuAnalysis(void) {
@@ -468,8 +469,7 @@ void CoaxVisionControl::controlPublisher(size_t rate) {
 int main(int argc, char **argv) {
   ros::init(argc, argv, "CoaxVisionControl");
 	ros::NodeHandle nh("~");
-  ImageProc vision(nh);  
-	CoaxVisionControl control(nh,vision);
+	CoaxVisionControl control(nh);
 
 	// make sure coax_server has enough time to start
 	ros::Duration(1.5).sleep(); 
