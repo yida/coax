@@ -54,7 +54,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 		}
 
 	// Inegral Image
-	vector <uint32_t> Integral_Image;
+	std::vector <uint32_t> Integral_Image;
 	size_t Idx = 0;          
 	size_t Up_Idx = 0;       
 	size_t Left_Idx = 0;     
@@ -75,8 +75,8 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 			Integral_Image[Idx] = frame.data[Idx] + Up + Left - UpLeft;  
   }
 
-	priority_queue<SymAxis, vector<SymAxis>, CompareSymAxis> Axis;
-	vector<SymAxis> AxisErr;
+	std::priority_queue<SymAxis, std::vector<SymAxis>, CompareSymAxis> Axis;
+	std::vector<SymAxis> AxisErr;
 /*	
 	// Integral Image Based kernel scan
 	size_t kerSize = 24; // Based on Matlab Result
@@ -115,7 +115,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 */
 
 	// optic flow
-	vector<double> OpticFlow;
+	std::vector<double> OpticFlow;
 	double heightSum = 0;
 	for (size_t col = 0; col < frame.width; col++) {
 		heightSum = 0;
@@ -171,7 +171,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 	size_t Right_Cur = 0; 
 	double L1_Norm = 0;
 	for (size_t cnt = 1; cnt < (frame.width - 1); cnt++) {
-		width = min(cnt,frame.width-1-cnt);
+		width = std::min(cnt,frame.width-1-cnt);
 		Sum_L1_Norm = 0;
 		for (size_t row = 0; row < frame.height; row++) {
 			shift = row * frame.width;

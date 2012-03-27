@@ -22,11 +22,33 @@
 #include <coax_vision/SetControlMode.h>
 
 #include <VisionFeedback.h>
+#include <CoaxFilter.h>
 
-using namespace std;
+struct param {
+	double motor_const1;
+	double motor_const2;
+	double servo1_const;
+	double servo2_const;
+	double yaw_coef1;
+	double yaw_coef2;
+	double thr_coef1;
+	double thr_coef2;
+	double r_rc_coef;
+	double p_rc_coef;
+	double kp_yaw;
+	double kd_yaw;
+	double kp_roll;
+	double kd_roll;
+	double kp_pitch;
+	double kd_pitch;
+	double kp_altitude;
+	double kp_imgyaw;
+	double kp_imgroll;
+	double range_base;
+};
 
 
-class CoaxVisionControl : public VisionFeedback 
+class CoaxVisionControl : public VisionFeedback, public KF 
 {
 
 public:
@@ -64,8 +86,8 @@ private:
 	ros::Publisher raw_control_pub;
 	ros::Publisher vision_control_pub;
 
-	vector<ros::ServiceServer> set_nav_mode;
-	vector<ros::ServiceServer> set_control_mode;
+	std::vector<ros::ServiceServer> set_nav_mode;
+	std::vector<ros::ServiceServer> set_control_mode;
 
 	bool LOW_POWER_DETECTED;
 
@@ -87,6 +109,7 @@ private:
 	double last_state_time;
 	
 	double battery_voltage;
+	struct param pm;
 	
 	double init_imu_x;
 	double init_imu_y;
@@ -136,37 +159,11 @@ private:
 	double roll_trim;
 	double pitch_trim;
 
-	double motor_const1;
-	double motor_const2;
-	double servo1_const;
-	double servo2_const;
-
-	double range_base;
 
 	double motor1_des;
 	double motor2_des;
 	double servo1_des;
 	double servo2_des;
-
-	double r_rc_coef;
-	double p_rc_coef;
-
-	double yaw_coef1;
-	double yaw_coef2;
-
-	double thr_coef1;
-	double thr_coef2;
-
-	double kp_yaw;
-	double kd_yaw;
-	double kp_roll;
-	double kd_roll;
-	double kp_pitch;
-	double kd_pitch;
-	double kp_altitude;
-
-	double kp_imgyaw;
-	double kp_imgroll;
 
 	double yaw_des;
 	double yaw_rate_des;

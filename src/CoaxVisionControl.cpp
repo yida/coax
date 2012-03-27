@@ -13,7 +13,7 @@
 #include <CoaxVisionControl.h>
 
 CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
-:VisionFeedback(node)
+:VisionFeedback(node), KF()
 
 ,reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
 ,configure_comm(node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm"))
@@ -64,34 +64,34 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
-	loadParams(node);
+
 }
 
 CoaxVisionControl::~CoaxVisionControl() {}
 
 void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
-	n.getParam("motorconst/const1",motor_const1);
-	n.getParam("motorconst/const2",motor_const2);
-	n.getParam("rollconst/const",servo1_const);
-	n.getParam("pitchconst/const",servo2_const);
-	n.getParam("yawcoef/coef1",yaw_coef1);
-	n.getParam("yawcoef/coef2",yaw_coef2);
-	n.getParam("throttlecoef/coef1",thr_coef1);
-	n.getParam("throttlecoef/coef2",thr_coef2);
-	n.getParam("rollrccoef/coef",r_rc_coef);
-	n.getParam("pitchrccoef/coef",p_rc_coef);
-	n.getParam("yawcontrol/proportional",kp_yaw);
-	n.getParam("yawcontrol/differential",kd_yaw);
-	n.getParam("rollcontrol/proportional",kp_roll);
-	n.getParam("rollcontrol/differential",kd_roll);
-	n.getParam("pitchcontrol/proportional",kp_pitch);
-	n.getParam("pitchcontrol/differential",kd_pitch);
-	n.getParam("altitude/base",range_base);
-	n.getParam("altitudecontrol/proportional",kp_altitude);
-	n.getParam("imageyawcontrol/proportional",kp_imgyaw);
-	n.getParam("imagerollcontrol/proportional",kp_imgroll);
+	n.getParam("motorconst/const1",pm.motor_const1);
+	n.getParam("motorconst/const2",pm.motor_const2);
+	n.getParam("rollconst/const",pm.servo1_const);
+	n.getParam("pitchconst/const",pm.servo2_const);
+	n.getParam("yawcoef/coef1",pm.yaw_coef1);
+	n.getParam("yawcoef/coef2",pm.yaw_coef2);
+	n.getParam("throttlecoef/coef1",pm.thr_coef1);
+	n.getParam("throttlecoef/coef2",pm.thr_coef2);
+	n.getParam("rollrccoef/coef",pm.r_rc_coef);
+	n.getParam("pitchrccoef/coef",pm.p_rc_coef);
+	n.getParam("yawcontrol/proportional",pm.kp_yaw);
+	n.getParam("yawcontrol/differential",pm.kd_yaw);
+	n.getParam("rollcontrol/proportional",pm.kp_roll);
+	n.getParam("rollcontrol/differential",pm.kd_roll);
+	n.getParam("pitchcontrol/proportional",pm.kp_pitch);
+	n.getParam("pitchcontrol/differential",pm.kd_pitch);
+	n.getParam("altitude/base",pm.range_base);
+	n.getParam("altitudecontrol/proportional",pm.kp_altitude);
+	n.getParam("imageyawcontrol/proportional",pm.kp_imgyaw);
+	n.getParam("imagerollcontrol/proportional",pm.kp_imgroll);
 
-	imu_al = range_base;
+	imu_al = pm.range_base;
 }
 
 //===================
@@ -301,13 +301,13 @@ bool CoaxVisionControl::rotorReady(void) {
 	if (rotor_ready_count <= 300) 
 		rotor_ready_count++;
 	if (rotor_ready_count < 150) {
-		motor1_des = rotor_ready_count / 150 * motor_const1;
+		motor1_des = rotor_ready_count / 150 * pm.motor_const1;
 		motor2_des = 0;
 		return false;
 	}
 	else if (rotor_ready_count < 300) {
-		motor1_des = motor_const1;
-		motor2_des = (rotor_ready_count - 150) / 150 * motor_const2;
+		motor1_des = pm.motor_const1;
+		motor2_des = (rotor_ready_count - 150) / 150 * pm.motor_const2;
 		return false;
 	}
 	return true;	
@@ -319,33 +319,33 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dpitch,Dpitch_rate,pitch_control;
 	double altitude_control,Daltitude;
 
-	altitude_des = range_base + thr_coef1 * rc_th;
+	altitude_des = pm.range_base + pm.thr_coef1 * rc_th;
 	if (range_al < 0.25)
 		Daltitude = 0;
 	else
 		Daltitude = range_al - altitude_des;
-	altitude_control = altitude_des + kp_altitude * Daltitude;
+	altitude_control = altitude_des + pm.kp_altitude * Daltitude;
 //	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
-	yaw_des += yaw_coef1*(rc_y+rc_trim_y);
+	yaw_des += pm.yaw_coef1*(rc_y+rc_trim_y);
 	ROS_INFO("desired yaw %f", yaw_des);
 	Dyaw = imu_y - yaw_des;
 	Dyaw_rate = gyro_ch3 - yaw_rate_des; 
-	yaw_control = kp_yaw * Dyaw + kd_yaw * Dyaw_rate; 
-//	ROS_INFO("rc yaw %f", yaw_coef1*(rc_y+rc_trim_y));
+	yaw_control = pm.kp_yaw * Dyaw + pm.kd_yaw * Dyaw_rate; 
+//	ROS_INFO("rc yaw %f", pm.yaw_coef1*(rc_y+rc_trim_y));
 	// roll error and ctrl
 	Droll = imu_r - roll_des;
 	Droll_rate = gyro_ch1 - roll_rate_des;
-	roll_control = kp_roll * Droll + kd_roll * Droll_rate;
+	roll_control = pm.kp_roll * Droll + pm.kd_roll * Droll_rate;
 	// pitch error and ctrl
 	Dpitch = imu_p - pitch_des;
 	Dpitch_rate = gyro_ch2 - pitch_rate_des;
-	pitch_control = kp_pitch * Dpitch + kd_pitch * Dpitch_rate;
+	pitch_control = pm.kp_pitch * Dpitch + pm.kd_pitch * Dpitch_rate;
 	// desired motor & servo output
-	motor1_des = motor_const1 - yaw_control + altitude_control;
-	motor2_des = motor_const2 + yaw_control + altitude_control;
-	servo1_des = servo1_const + r_rc_coef * (rc_r+rc_trim_r) + roll_control;
-	servo2_des = servo2_const - p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
+	motor1_des = pm.motor_const1 - yaw_control + altitude_control;
+	motor2_des = pm.motor_const2 + yaw_control + altitude_control;
+	servo1_des = pm.servo1_const + pm.r_rc_coef * (rc_r+rc_trim_r) + roll_control;
+	servo2_des = pm.servo2_const - pm.p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
 }
 
 void CoaxVisionControl::visionControl(void) {
@@ -386,10 +386,10 @@ void CoaxVisionControl::visionControl(void) {
 
 	Axis = image.SortedAxis.front();
 	DyawIMG = Axis.axis - centerIMG;
-	yawIMG_control = kp_imgyaw * DyawIMG;
+	yawIMG_control = pm.kp_imgyaw * DyawIMG;
 	motor1_des += yawIMG_control;
 	motor2_des -= yawIMG_control; 
-	servo1_des += kp_imgroll * image.shift;
+	servo1_des += pm.kp_imgroll * image.shift;
 //		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
 */
 }
@@ -470,6 +470,9 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "CoaxVisionControl");
 	ros::NodeHandle nh("~");
 	CoaxVisionControl control(nh);
+
+	// Load Params
+	control.loadParams(nh);
 
 	// make sure coax_server has enough time to start
 	ros::Duration(1.5).sleep(); 
