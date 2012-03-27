@@ -12,6 +12,8 @@
 #include <com/sbapi.h>
 #include <CoaxVisionControl.h>
 
+#include <Eigen/Dense>
+
 CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 :VisionFeedback(node), KF()
 
@@ -214,6 +216,12 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 //==============
 
 void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
+	static int initTime = 500;
+	static int initCounter = 0;
+
+	Vector3f init_acc();
+	Vector3f init_gyr();
+
 	battery_voltage = 0.8817*message->battery + 1.5299;
 	coax_nav_mode = message->mode.navigation;
 	
@@ -228,6 +236,8 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 		ROS_INFO("Battery Low!!! (%fV) Landing initialized",battery_voltage);
 		LOW_POWER_DETECTED = true;
 	}
+
+	
 
 	imu_y = message->yaw;
 	imu_r = message->roll;
@@ -244,9 +254,9 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 	gyro_ch2 = message->gyro[1];
 	gyro_ch3 = message->gyro[2];
 
-	accel_x = message->accel[0];// - init_imu_x;
-	accel_y = message->accel[1];// - init_imu_y;
-	accel_z = message->accel[2];// - init_imu_z;
+	accel_x = message->accel[0];
+	accel_y = message->accel[1];
+	accel_z = message->accel[2];
 	return;
 }
 

@@ -18,6 +18,7 @@
 	<depend package="opencv2"/>
 	<depend package="coax_server"/>
 	<depend package="coax_msgs"/>
+	<depend package="eigen"/>
 
 </package>
 
