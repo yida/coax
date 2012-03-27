@@ -12,7 +12,7 @@
 #include <com/sbapi.h>
 #include <CoaxVisionControl.h>
 
-#include <Eigen/Dense>
+
 
 CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 :VisionFeedback(node), KF()
@@ -22,7 +22,7 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,configure_control(node.serviceClient<coax_msgs::CoaxConfigureControl>("configure_control"))
 ,set_timeout(node.serviceClient<coax_msgs::CoaxSetTimeout>("set_timeout"))
 
-,coax_state_sub(node.subscribe("state",1, &CoaxVisionControl::coaxStateCallback, this))
+,coax_state_sub(node.subscribe("state",1, &CoaxVisionControl::StateCallback, this))
 
 ,raw_control_pub(node.advertise<coax_msgs::CoaxRawControl>("rawcontrol",1))
 ,vision_control_pub(node.advertise<coax_msgs::CoaxControl>("visioncontrol",1))
@@ -43,16 +43,10 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,rotor_ready_count(-1)
 ,last_state_time(0.0)
 ,battery_voltage(12.22)
-,init_imu_x(0.0),init_imu_y(0.0),init_imu_z(0.0)
-,imu_y(0.0),imu_r(0.0),imu_p(0.0),imu_al(0.0)
+
+,rpy(0,0,0), accel(0,0,0), gyro(0,0,0), rpyt_rc(0,0,0,0), rpyt_rc_trim(0,0,0,0)
+
 ,range_al(0.0)
-,rc_th(0.0),rc_y(0.0),rc_r(0.0),rc_p(0.0)
-,rc_trim_th(0.0),rc_trim_y(0.104),rc_trim_r(0.054),rc_trim_p(0.036)
-,img_th(0.0),img_y(0.0),img_r(0.0),img_p(0.0)
-,gyro_ch1(0.0),gyro_ch2(0.0),gyro_ch3(0.0)
-,accel_x(0.0),accel_y(0.0),accel_z(0.0)
-,gyro_ch1_init(0.0),gyro_ch2_init(0.0),gyro_ch3_init(0.0)
-,accel_x_init(0.0),accel_y_init(0.0),accel_z_init(0.0)
 ,pos_z(0.0),vel_z(0.0)
 ,motor_up(0),motor_lo(0)
 ,servo_roll(0),servo_pitch(0)
@@ -62,7 +56,6 @@ CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
 ,roll_des(0.0),roll_rate_des(0.0)
 ,pitch_des(0.0),pitch_rate_des(0.0)
 ,altitude_des(0.0)
-,z(0.0),z_v(0.0)
 {
 	set_nav_mode.push_back(node.advertiseService("set_nav_mode", &CoaxVisionControl::setNavMode, this));
 	set_control_mode.push_back(node.advertiseService("set_control_mode", &CoaxVisionControl::setControlMode, this));
@@ -93,7 +86,6 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("imageyawcontrol/proportional",pm.kp_imgyaw);
 	n.getParam("imagerollcontrol/proportional",pm.kp_imgroll);
 
-	imu_al = pm.range_base;
 }
 
 //===================
@@ -215,16 +207,24 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 // Subscriber
 //==============
 
-void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message) {
+void CoaxVisionControl::StateCallback(const coax_msgs::CoaxState::ConstPtr & msg) {
 	static int initTime = 500;
 	static int initCounter = 0;
 
-	Vector3f init_acc();
-	Vector3f init_gyr();
+	static Eigen::Vector3f init_acc(0,0,0);
+	static Eigen::Vector3f init_gyr(0,0,0);
 
-	battery_voltage = 0.8817*message->battery + 1.5299;
-	coax_nav_mode = message->mode.navigation;
-	
+	battery_voltage = 0.8817*msg->battery + 1.5299;
+	coax_nav_mode = msg->mode.navigation;
+
+	// Read from State
+	rpy << msg->roll, msg->pitch, msg->yaw; 
+	accel << msg->accel[0], msg->accel[1], msg->accel[2];
+	gyro << msg->gyro[0], msg->gyro[1], msg->gyro[2];
+	rpyt_rc << msg->rcChannel[4], msg->rcChannel[6], msg->rcChannel[2], msg->rcChannel[0];
+	rpyt_rc_trim << msg->rcChannel[5], msg->rcChannel[7], msg->rcChannel[3], msg->rcChannel[1];
+	range_al = msg->zfiltered;
+
 	if (FIRST_STATE) {
 		last_state_time = ros::Time::now().toSec();
 		FIRST_STATE = false;
@@ -237,26 +237,17 @@ void CoaxVisionControl::coaxStateCallback(const coax_msgs::CoaxState::ConstPtr &
 		LOW_POWER_DETECTED = true;
 	}
 
+	if (initCounter < initTime) {
+		init_acc += accel;
+		init_gyr += gyro;
+		initCounter++;
+	}
+	else if (initCounter == initTime) {
+		init_acc /= initTime;
+		gravity = init_acc.norm();
+		ROS_INFO("IMU Calibration Done! Gravity: %f", gravity);
+	}
 	
-
-	imu_y = message->yaw;
-	imu_r = message->roll;
-	imu_p = message->pitch;
-
-	range_al = message->zfiltered;
-
-	rc_th = message->rcChannel[0];
-	rc_y = message->rcChannel[2];
-	rc_r = message->rcChannel[4];
-	rc_p = message->rcChannel[6];
-
-	gyro_ch1 = message->gyro[0];
-	gyro_ch2 = message->gyro[1];
-	gyro_ch3 = message->gyro[2];
-
-	accel_x = message->accel[0];
-	accel_y = message->accel[1];
-	accel_z = message->accel[2];
 	return;
 }
 
@@ -329,7 +320,7 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dpitch,Dpitch_rate,pitch_control;
 	double altitude_control,Daltitude;
 
-	altitude_des = pm.range_base + pm.thr_coef1 * rc_th;
+	altitude_des = pm.range_base + pm.thr_coef1 * rpyt_rc[3];
 	if (range_al < 0.25)
 		Daltitude = 0;
 	else
@@ -337,138 +328,37 @@ void CoaxVisionControl::stabilizationControl(void) {
 	altitude_control = altitude_des + pm.kp_altitude * Daltitude;
 //	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
-	yaw_des += pm.yaw_coef1*(rc_y+rc_trim_y);
+	yaw_des += pm.yaw_coef1*(rpyt_rc[2]+rpyt_rc_trim[2]);
 	ROS_INFO("desired yaw %f", yaw_des);
-	Dyaw = imu_y - yaw_des;
-	Dyaw_rate = gyro_ch3 - yaw_rate_des; 
+	Dyaw = rpy[2] - yaw_des;
+	Dyaw_rate = gyro[2] - yaw_rate_des; 
 	yaw_control = pm.kp_yaw * Dyaw + pm.kd_yaw * Dyaw_rate; 
 //	ROS_INFO("rc yaw %f", pm.yaw_coef1*(rc_y+rc_trim_y));
 	// roll error and ctrl
-	Droll = imu_r - roll_des;
-	Droll_rate = gyro_ch1 - roll_rate_des;
+	Droll = rpy[0] - roll_des;
+	Droll_rate = gyro[0] - roll_rate_des;
 	roll_control = pm.kp_roll * Droll + pm.kd_roll * Droll_rate;
 	// pitch error and ctrl
-	Dpitch = imu_p - pitch_des;
-	Dpitch_rate = gyro_ch2 - pitch_rate_des;
+	Dpitch = rpy[1] - pitch_des;
+	Dpitch_rate = gyro[1] - pitch_rate_des;
 	pitch_control = pm.kp_pitch * Dpitch + pm.kd_pitch * Dpitch_rate;
 	// desired motor & servo output
 	motor1_des = pm.motor_const1 - yaw_control + altitude_control;
 	motor2_des = pm.motor_const2 + yaw_control + altitude_control;
-	servo1_des = pm.servo1_const + pm.r_rc_coef * (rc_r+rc_trim_r) + roll_control;
-	servo2_des = pm.servo2_const - pm.p_rc_coef * (rc_p+rc_trim_p)  + pitch_control;
-}
-
-void CoaxVisionControl::visionControl(void) {
-/*
-	double DyawIMG, yawIMG_control;
-	double centerIMG = 30;
-	SymAxis Axis;
-	if (image.SortedAxis.size() == 0)
-		return;
-//	if (image.PeakAxis.size() != 0) {
-//		size_t	peakmid = image.PeakAxis.size()/2;
-//		std::cout << "first filter" << std::endl;
-//		deque<SymAxis> Peak2;
-//		for (size_t cnt = 1; cnt < image.PeakAxis.size()-1; cnt++) {
-//			if ((image.PeakAxis[cnt].value > image.PeakAxis[cnt-1].value) &&
-//					(image.PeakAxis[cnt].value > image.PeakAxis[cnt+1].value)) {
-//						std::cout << image.PeakAxis[cnt].axis << ' ';
-//						Peak2.push_back(image.PeakAxis[cnt]);
-//			}
-//		}
-//		std::cout << std::endl;
-//		if (Peak2.size()>0) {
-//			for (size_t cnt = 1; cnt < Peak2.size()-1; cnt++) {
-//				if ((Peak2[cnt].value > Peak2[cnt-1].value) &&
-//						(Peak2[cnt].value > Peak2[cnt+1].value)) {
-//							std::cout << Peak2[cnt].axis << ' ';
-//				}
-//			}
-//		}
-//		std::cout << std::endl;
-//		std::cout << image.PeakAxis[peakmid-2].axis << ' '; // << image.PeakAxis[peakmid-2].value << ' ';
-//		std::cout << image.PeakAxis[peakmid-1].axis << ' '; // << image.PeakAxis[peakmid-1].value << ' ';
-//		std::cout << image.PeakAxis[peakmid].axis << ' '; // << image.PeakAxis[peakmid].value << ' ';
-//		std::cout << image.PeakAxis[peakmid+1].axis	<< ' '; // << image.PeakAxis[peakmid+1].value << ' ';
-//		std::cout << image.PeakAxis[peakmid+2].axis << std::endl; // ' ' << image.PeakAxis[peakmid+2].value << std::endl;	
-//		ROS_INFO("Find %d peaks",image.PeakAxis.size());
-//	}
-
-	Axis = image.SortedAxis.front();
-	DyawIMG = Axis.axis - centerIMG;
-	yawIMG_control = pm.kp_imgyaw * DyawIMG;
-	motor1_des += yawIMG_control;
-	motor2_des -= yawIMG_control; 
-	servo1_des += pm.kp_imgroll * image.shift;
-//		ROS_INFO("Current Symmetric Axis: %d",Axis.axis);
-*/
-}
-
-void CoaxVisionControl::imuAnalysis(void) {
-//		ROS_INFO("acc Z %f", accel_z + gravity);
-	double currentTime = ros::Time::now().toSec();
-	double deltaT = currentTime - last_state_time;
-//	ROS_INFO("Delta Time %f", deltaT);
-	last_state_time = currentTime;
-
-	double curAccZ = sqrt(pow(accel_x,2) + pow(accel_y,2) + pow(accel_z,2));
-	curAccZ -= gravity;	
-	//curAccZ = (abs(curAccZ)>0.1)? curAccZ : 0;
-//	ROS_INFO("curAccZ: %f", curAccZ);
-	z = z + deltaT * z_v + 0.5 * deltaT * deltaT * curAccZ;
-	z_v = z_v + deltaT * curAccZ; 	
-	ROS_INFO("AccZ %f Z: %f, Z_V: %f",curAccZ,z, z_v);
-	
+	servo1_des = pm.servo1_const + pm.r_rc_coef * (rpyt_rc[0]+rpyt_rc_trim[0]) + roll_control;
+	servo2_des = pm.servo2_const - pm.p_rc_coef * (rpyt_rc[1]+rpyt_rc_trim[1]) + pitch_control;
 }
 
 void CoaxVisionControl::controlPublisher(size_t rate) {
 	ros::Rate loop_rate(rate);
 
-	double sum_Yaw_desire = 0;
-
-
 	while(ros::ok()) {
-		int init_iters = 1000;
-		if ((init_count<init_iters)) {
-			sum_Yaw_desire = sum_Yaw_desire + imu_y;
-			gyro_ch1_init = gyro_ch1_init + gyro_ch1;
-			gyro_ch2_init = gyro_ch2_init + gyro_ch2;
-			gyro_ch3_init = gyro_ch3_init + gyro_ch3;
-			accel_x_init = accel_x_init + accel_x;
-			accel_y_init = accel_y_init + accel_y;
-			accel_z_init = accel_z_init + accel_z;
-			init_count ++;
-		}
-		else if (!INIT_DESIRE) {
-			yaw_des = sum_Yaw_desire / init_iters;		
-			ROS_INFO("Initiated Desired Yaw %f",yaw_des);
-			gyro_ch1_init /= init_iters;
-			gyro_ch2_init /= init_iters;
-			gyro_ch3_init /= init_iters;
-			accel_x_init /= init_iters;
-			accel_y_init /= init_iters;
-			accel_z_init /= init_iters;
-			gravity = sqrt(pow(accel_x_init,2)+pow(accel_y_init,2)+pow(accel_z_init,2));
-			last_state_time = ros::Time::now().toSec();
-			ROS_INFO("Init Gyro Value: %f %f %f", gyro_ch1_init, gyro_ch2_init, gyro_ch3_init);
-			ROS_INFO("Init Acce Value: %f %f %f with Gravity %f", 
-								accel_x_init, accel_y_init, accel_z_init, gravity);
-			ROS_INFO("Current Battery Voltage %f",battery_voltage);
-			sum_Yaw_desire = 0;
-			INIT_DESIRE = true;
-		}
 
-		if (INIT_DESIRE) {
-			imuAnalysis();
-		}
-		
-		if (INIT_DESIRE && rotorReady()) {
+		if (rotorReady()) {
 			stabilizationControl();
 //			visionControl();
 		}
 		setRawControl(motor1_des,motor2_des,servo1_des,servo2_des);
-
-
 
 		ros::spinOnce();
 		loop_rate.sleep();

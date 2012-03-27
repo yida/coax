@@ -9,6 +9,7 @@
 #define CONTROL_TRAJECTORY 5 // Follow Trajectory                                                   
 #define CONTROL_LANDING 6 // Landing maneuver
 
+#include <Eigen/Dense>
 #include <std_msgs/String.h>
 
 #include <coax_msgs/CoaxState.h>
@@ -64,9 +65,8 @@ public:
 	bool setNavMode(coax_vision::SetNavMode::Request &req, coax_vision::SetNavMode::Response &out);
 	bool setControlMode(coax_vision::SetControlMode::Request &req, coax_vision::SetControlMode::Response &out);
 
-	void coaxStateCallback(const coax_msgs::CoaxState::ConstPtr & message);
+	void StateCallback(const coax_msgs::CoaxState::ConstPtr & msg);
 	void stabilizationControl(void);
-	void imuAnalysis(void);
 	void visionControl(void);
 	bool rotorReady(void);
 	void controlPublisher(size_t rate);
@@ -111,42 +111,14 @@ private:
 	double battery_voltage;
 	struct param pm;
 	
-	double init_imu_x;
-	double init_imu_y;
-	double init_imu_z;
+	Eigen::Vector3f rpy;
+	Eigen::Vector3f accel;
+	Eigen::Vector3f gyro;
+	Eigen::Vector4f rpyt_rc;
+	Eigen::Vector4f rpyt_rc_trim;
 
-	double imu_y; // imu yaw
-	double imu_r; // imu roll 
-	double imu_p; // imu pitch
-	double imu_al; // altitude by integrate imu
 	double range_al; // range altitude
 
-	double rc_th; // rc throttle
-	double rc_y;  // rc yaw
-	double rc_r;  // rc roll
-	double rc_p;  // rc pitch
-	double rc_trim_th; // rc throttle trim
-	double rc_trim_y;  // rc yaw trim
-	double rc_trim_r;  // rc roll trim
-	double rc_trim_p;  // rc pitch trim
-	
-	double img_th;  // image throttle
-	double img_y; 	// image yaw
-	double img_r; 	// image roll
-	double img_p; 	// image pitch
-
-	double gyro_ch1;
-	double gyro_ch2;
-	double gyro_ch3;
-	double accel_x;
-	double accel_y;
-	double accel_z; 
-	double gyro_ch1_init;
-	double gyro_ch2_init;
-	double gyro_ch3_init;
-	double accel_x_init;
-	double accel_y_init;
-	double accel_z_init;
 	double gravity;
 
 	double pos_z;
@@ -172,10 +144,6 @@ private:
 	double pitch_des;
 	double pitch_rate_des;
 	double altitude_des;
-
-	double z;
-	double z_v;
-
 
 };
 
