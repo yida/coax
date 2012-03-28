@@ -43,6 +43,8 @@ struct param {
 	double kp_pitch;
 	double kd_pitch;
 	double kp_altitude;
+	double kd_altitude;
+	double ki_altitude;
 	double kp_imgyaw;
 	double kp_imgroll;
 	double range_base;

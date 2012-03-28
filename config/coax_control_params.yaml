@@ -9,6 +9,8 @@ altitude:
 
 altitudecontrol:
   proportional: -0.001
+  differential: 0.005
+  integration: 0.00005
 
 yawcontrol:
   proportional: 0.030

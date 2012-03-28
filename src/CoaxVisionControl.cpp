@@ -82,7 +82,11 @@ void CoaxVisionControl::loadParams(ros::NodeHandle &n) {
 	n.getParam("pitchcontrol/proportional",pm.kp_pitch);
 	n.getParam("pitchcontrol/differential",pm.kd_pitch);
 	n.getParam("altitude/base",pm.range_base);
+
 	n.getParam("altitudecontrol/proportional",pm.kp_altitude);
+	n.getParam("altitudecontrol/differential",pm.kd_altitude);
+	n.getParam("altitudecontrol/integration",pm.ki_altitude);
+
 	n.getParam("imageyawcontrol/proportional",pm.kp_imgyaw);
 	n.getParam("imagerollcontrol/proportional",pm.kp_imgroll);
 
@@ -135,7 +139,7 @@ bool CoaxVisionControl::setNavMode(coax_vision::SetNavMode::Request &req, coax_v
 	out.result = 0;
 	
 	switch (req.mode) 
-	{
+	{	
 		case SB_NAV_STOP:
 			break;
 		case SB_NAV_IDLE:
@@ -208,7 +212,7 @@ bool CoaxVisionControl::setControlMode(coax_vision::SetControlMode::Request &req
 //==============
 
 void CoaxVisionControl::StateCallback(const coax_msgs::CoaxState::ConstPtr & msg) {
-	static int initTime = 500;
+	static int initTime = 200;
 	static int initCounter = 0;
 
 	static Eigen::Vector3f init_acc(0,0,0);
@@ -219,11 +223,19 @@ void CoaxVisionControl::StateCallback(const coax_msgs::CoaxState::ConstPtr & msg
 
 	// Read from State
 	rpy << msg->roll, msg->pitch, msg->yaw; 
+//	std::cout << "RPY: \n" << rpy << std::endl;
 	accel << msg->accel[0], msg->accel[1], msg->accel[2];
 	gyro << msg->gyro[0], msg->gyro[1], msg->gyro[2];
 	rpyt_rc << msg->rcChannel[4], msg->rcChannel[6], msg->rcChannel[2], msg->rcChannel[0];
 	rpyt_rc_trim << msg->rcChannel[5], msg->rcChannel[7], msg->rcChannel[3], msg->rcChannel[1];
 	range_al = msg->zfiltered;
+
+	Eigen::Matrix3f m;
+	m = Eigen::AngleAxisf(rpy[2], Eigen::Vector3f::UnitZ())
+  		* Eigen::AngleAxisf(rpy[1], Eigen::Vector3f::UnitY())
+			* Eigen::AngleAxisf(rpy[0], Eigen::Vector3f::UnitX());
+	// Acc from body frame to world frame
+	accel = m * accel;
 
 	if (FIRST_STATE) {
 		last_state_time = ros::Time::now().toSec();
@@ -245,9 +257,16 @@ void CoaxVisionControl::StateCallback(const coax_msgs::CoaxState::ConstPtr & msg
 	else if (initCounter == initTime) {
 		init_acc /= initTime;
 		gravity = init_acc.norm();
+		setGravity(gravity);
 		ROS_INFO("IMU Calibration Done! Gravity: %f", gravity);
+		initCounter++;
+
+		setInit(msg->header.stamp);
 	}
-	
+	else {
+		processUpdate(accel, gyro, msg->header.stamp);
+		measureUpdate(range_al);
+	}
 	return;
 }
 
@@ -318,14 +337,17 @@ void CoaxVisionControl::stabilizationControl(void) {
 	double Dyaw,Dyaw_rate,yaw_control;
 	double Droll,Droll_rate,roll_control;
 	double Dpitch,Dpitch_rate,pitch_control;
-	double altitude_control,Daltitude;
+	double altitude_control,Daltitude, Daltitude_rate;
+	static double Daltitude_Int = 0;
 
-	altitude_des = pm.range_base + pm.thr_coef1 * rpyt_rc[3];
-	if (range_al < 0.25)
-		Daltitude = 0;
-	else
-		Daltitude = range_al - altitude_des;
-	altitude_control = altitude_des + pm.kp_altitude * Daltitude;
+	Eigen::Vector2f state = getState();
+
+	altitude_des = rpyt_rc[3];
+	Daltitude =  altitude_des - state(0);
+	Daltitude_rate = -state(1);
+	Daltitude_Int += Daltitude;
+	altitude_control = pm.kp_altitude * Daltitude + pm.kd_altitude * Daltitude_rate + pm.ki_altitude * Daltitude_Int;
+
 //	ROS_INFO("range %f Daltitude %f",range_al,Daltitude);
 	// yaw error and ctrl
 	yaw_des += pm.yaw_coef1*(rpyt_rc[2]+rpyt_rc_trim[2]);
@@ -334,14 +356,17 @@ void CoaxVisionControl::stabilizationControl(void) {
 	Dyaw_rate = gyro[2] - yaw_rate_des; 
 	yaw_control = pm.kp_yaw * Dyaw + pm.kd_yaw * Dyaw_rate; 
 //	ROS_INFO("rc yaw %f", pm.yaw_coef1*(rc_y+rc_trim_y));
+
 	// roll error and ctrl
 	Droll = rpy[0] - roll_des;
 	Droll_rate = gyro[0] - roll_rate_des;
 	roll_control = pm.kp_roll * Droll + pm.kd_roll * Droll_rate;
+
 	// pitch error and ctrl
 	Dpitch = rpy[1] - pitch_des;
 	Dpitch_rate = gyro[1] - pitch_rate_des;
 	pitch_control = pm.kp_pitch * Dpitch + pm.kd_pitch * Dpitch_rate;
+
 	// desired motor & servo output
 	motor1_des = pm.motor_const1 - yaw_control + altitude_control;
 	motor2_des = pm.motor_const2 + yaw_control + altitude_control;
