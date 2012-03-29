@@ -6,7 +6,7 @@
 
 class KF {
 public:
-	KF();
+	KF(ros::NodeHandle&);
 	~KF();
 
 	bool processUpdate(const Eigen::Vector3f& acc, const Eigen::Vector3f& gyro,

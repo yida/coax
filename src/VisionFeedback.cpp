@@ -1,13 +1,5 @@
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <ros/ros.h>
 
-#include <CoaxVisionControl.h>
-#include <coax_vision/ImageDebug.h>
+#include <VisionFeedback.h>
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -34,6 +26,8 @@ VisionFeedback::VisionFeedback(ros::NodeHandle& nh_)
 
 VisionFeedback::~VisionFeedback() {
 }
+
+
 
 void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg) 
 {

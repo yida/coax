@@ -1,7 +1,17 @@
 #ifndef __VISIONFEEDBACK__
 #define __VISIONFEEDBACK__
 
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cmath>
+#include <algorithm>
+#include <sstream>
+#include <ros/ros.h>
+
+#include <coax_vision/ImageDebug.h>
 #include <image_transport/image_transport.h>
+
 #include <sensor_msgs/image_encodings.h>
 
 struct SymAxis 

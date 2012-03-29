@@ -53,6 +53,7 @@
 
       <rosparam file="$(find coax_vision)/config/coax_parameters.yaml"/>
       <rosparam file="$(find coax_vision)/config/coax_control_params.yaml"/>
+      <rosparam file="$(find coax_vision)/config/coax_camera_params.yaml"/>
 
     </node>
 

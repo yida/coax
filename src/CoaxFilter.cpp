@@ -1,9 +1,8 @@
 
 #include <CoaxFilter.h>
 
-KF::KF()
+KF::KF(ros::NodeHandle& nh)
 :gravity(9.8)
-
 ,Time(0)
 {
 	state << 0.0, 0.0;

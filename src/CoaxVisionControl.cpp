@@ -15,7 +15,7 @@
 
 
 CoaxVisionControl::CoaxVisionControl(ros::NodeHandle &node)
-:VisionFeedback(node), KF()
+:VisionFeedback(node), KF(node)
 
 ,reach_nav_state(node.serviceClient<coax_msgs::CoaxReachNavState>("reach_nav_state"))
 ,configure_comm(node.serviceClient<coax_msgs::CoaxConfigureComm>("configure_comm"))
