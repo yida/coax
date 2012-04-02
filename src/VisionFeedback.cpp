@@ -17,36 +17,52 @@ VisionFeedback::VisionFeedback(ros::NodeHandle& nh_)
 ,Pub_Image(it_.advertise("image_proc", 1))
 ,Debug_Msgs(nh_.advertise<coax_vision::ImageDebug>("image_debug",100))
 ,FIRST_FRAME(true)
-,width(0)
-,height(0)
+,width(64)
+,height(48)
 ,symPos(0)
 ,shift(0)
+,image(height,width)
 {
+	nh_.getParam("image_width", width);
+	nh_.getParam("image_height", height);
+	nh_.getParam("resize_ratio", resize_ratio);
+	width /= resize_ratio;
+	height /= resize_ratio;
+	image.resize(height, width);
 }
 
 VisionFeedback::~VisionFeedback() {
 }
 
+void VisionFeedback::resize(const sensor_msgs::ImageConstPtr& msg) {
+  for (size_t h = 0; h < msg->height; h += resize_ratio)
+	  for (size_t w = 0; w < msg->width; w += resize_ratio)
+			image(h/resize_ratio,w/resize_ratio) = msg->data[h*msg->step+w];
+}
 
+void VisionFeedback::PublishImage(const Eigen::MatrixXd& img, image_transport::Publisher& Pub) {
+	sensor_msgs::Image out_img;
+	out_img.header.stamp = ros::Time::now();
+	out_img.header.frame_id = "out_img";
+	out_img.height = height;
+	out_img.width = width;
+	out_img.encoding = "mono8";
+	out_img.is_bigendian = 0;
+	out_img.step = width;
+	for (int h = 0; h < height; h++)
+		for (int w = 0; w < width; w++) {
+			out_img.data.push_back((char)image(h,w));
+		}
+	Pub.publish(out_img);	 
+}
 
 void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg) 
 {
-//	ROS_INFO("frame type %d",msg->step);
-	sensor_msgs::Image frame;
-	frame = *msg;
-	// Resize
-	size_t resize = 10; 
-	frame.height = msg->height / resize;
-  frame.width = msg->width / resize;
-  frame.step = msg->width / resize;
-	frame.data.resize(frame.height * frame.width);
-  size_t im_idx = 0;
-  for (size_t i = 0; i < msg->height; i += resize)
-	  for (size_t j = 0; j < msg->width; j += resize) {
-			frame.data[im_idx] = msg->data[i*msg->step+j];
-			im_idx ++;
-		}
+//	std::cout << "Image Receiving" << std::endl;
+	resize(msg);
+	PublishImage(image,Pub_Image); 
 
+/*
 	// Inegral Image
 	std::vector <uint32_t> Integral_Image;
 	size_t Idx = 0;          
@@ -71,7 +87,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 
 	std::priority_queue<SymAxis, std::vector<SymAxis>, CompareSymAxis> Axis;
 	std::vector<SymAxis> AxisErr;
-/*	
+	
 	// Integral Image Based kernel scan
 	size_t kerSize = 24; // Based on Matlab Result
 	size_t Aidx,Bidx,Cidx,Didx;
@@ -106,7 +122,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 		Axis.push(Temp);
 		AxisErr.push_back(Temp);
 	}
-*/
+
 
 	// optic flow
 	std::vector<double> OpticFlow;
@@ -212,6 +228,7 @@ void VisionFeedback::proc(const sensor_msgs::ImageConstPtr& msg)
 //	debugMsg.ThirdAxis = Third.axis;
 	Debug_Msgs.publish(debugMsg);	
 	Pub_Image.publish(frame);
+*/
 }
 
 

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <sstream>
 #include <ros/ros.h>
+#include <Eigen/Dense>
 
 #include <coax_vision/ImageDebug.h>
 #include <image_transport/image_transport.h>
@@ -34,6 +35,10 @@ public:
   VisionFeedback(ros::NodeHandle&);
   ~VisionFeedback();
 
+  void proc(const sensor_msgs::ImageConstPtr& msg);
+	void resize(const sensor_msgs::ImageConstPtr& msg);
+	void PublishImage(const Eigen::MatrixXd& img, image_transport::Publisher& Pub);
+
 private:
   image_transport::ImageTransport it_;
   image_transport::Subscriber Sub_Image;
@@ -41,16 +46,18 @@ private:
 	// For debug message
 	ros::Publisher Debug_Msgs;
 
-  void proc(const sensor_msgs::ImageConstPtr& msg);
 	// Flip Searching Symmetric Axis
 	std::deque<SymAxis> SortedAxis;
 	std::deque<SymAxis> PeakAxis;
 	std::vector<double> LastOpicFlow;
 	bool FIRST_FRAME;
-	size_t width;
-	size_t height;
+	int width;
+	int height;
+	double resize_ratio;
 	size_t symPos;
 	double shift;
+
+	Eigen::MatrixXd image;
 };
 
 #endif
