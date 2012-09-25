@@ -13,3 +13,4 @@ src/coax_vision
 *.asv
 *.o
 
+deploy
