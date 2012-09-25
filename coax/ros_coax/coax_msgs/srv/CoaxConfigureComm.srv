@@ -1,5 +1,0 @@
-uint16 frequency
-uint32 contents
----
-int8 result
-

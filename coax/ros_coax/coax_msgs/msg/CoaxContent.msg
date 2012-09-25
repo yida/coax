@@ -1,6 +1,0 @@
-# First all the constants
-
-
-
-
-

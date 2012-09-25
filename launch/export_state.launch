@@ -1,6 +1,0 @@
-<launch>
-  <arg name="bagname" />
-  <node pkg="rosbag" type="rosbag" name="rosbag" args="play -d 2 $(arg bagname)">
-	<remap from="/coax_server/state" to="state"/>
-	</node>
-</launch>

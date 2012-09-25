@@ -1,9 +1,0 @@
-<!-- Point Grey Camera -->
-
-<launch>
-  <arg name = "camera" default = "pointGrey2000"/>
-  <node name="camera1394_node" pkg="camera1394" type="camera1394_node">
-    <rosparam file = "$(arg camera).yaml"/>
-  </node>  
-  
-</launch>
