@@ -1,0 +1,6 @@
+guid: 00b09d0100a80b41 
+video_mode: 640x480_mono8
+frame_id: point
+use_ros_time: true
+bayer_pattern: "rggb"
+bayer_method: ""

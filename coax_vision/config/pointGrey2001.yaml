@@ -1,0 +1,15 @@
+guid: 00b09d01009d32b8
+video_mode: 640x480_mono8
+frame_id: point
+use_ros_time: true
+reset_on_open: true
+auto_brightness: 3
+brightness: 176
+auto_exposure: 3
+exposure: 62
+auto_gain: 3
+gain: 16
+auto_shutter: 3
+shutter: 70
+
+

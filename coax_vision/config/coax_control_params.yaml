@@ -1,0 +1,53 @@
+imagerollcontrol:
+  proportional: 0.05
+
+imageyawcontrol:
+  proportional: 0.002
+
+altitude:
+  base: 0.049
+
+altitudecontrol:
+  proportional: -0.001
+  differential: 0.005
+  integration: 0.00005
+
+yawcontrol:
+  proportional: 0.030
+  differential: 0.005
+
+rollcontrol:
+  proportional: -0.1
+  differential: 0.05
+
+pitchcontrol:
+  proportional: -0.1
+  differential: 0.05
+
+rate_damping:
+  roll: -0.04
+  pitch: 0.04
+
+motorconst:
+  const1: 0.35
+  const2: 0.3832
+
+rollrccoef:
+  coef: 0.4
+
+pitchrccoef:
+  coef: 0.4
+
+rollconst:
+  const: -0.1185
+
+pitchconst:
+  const: -0.0450
+
+throttlecoef:
+  coef1: 0.52
+  coef2: 0.52
+
+yawcoef:
+  coef1: 0.0001
+  coef2: 0.0001
