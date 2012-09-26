@@ -34,19 +34,18 @@ set(COAXTARGET linux)
 link_directories(${COAXHOME}/${COAXTARGET}/lib)
 include_directories(${COAXHOME}/${COAXTARGET}/include)
 
+set(OSDEF -DLINUX)
+set(LIBDEF sbcom pthread rt)
 
-add_definitions(-DSBC_HAS_IO -DDEFENSIVE -DSBC_HAS_COMM -DSBC_HAS_PTHREAD -DLINUX)
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(OSDEF -DLINUX -DMACOSX)
+  set(LIBDEF sbcom pthread)
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+
+add_definitions(-DSBC_HAS_IO -DDEFENSIVE -DSBC_HAS_COMM -DSBC_HAS_PTHREAD ${OSDEF})
 rosbuild_add_executable(coax_server src/coax_server.cpp)
-target_link_libraries(coax_server sbcom pthread rt)
+target_link_libraries(coax_server ${LIBDEF})
 
-rosbuild_add_executable(coax_vicon_webots src/coax_vicon_webots.cpp)
-target_link_libraries(coax_vicon_webots sbcom pthread rt)
-
-add_definitions(-DSBC_HAS_IO -DDEFENSIVE -DSBC_HAS_COMM -DSBC_HAS_PTHREAD -DLINUX)
+add_definitions(-DSBC_HAS_IO -DDEFENSIVE -DSBC_HAS_COMM -DSBC_HAS_PTHREAD ${OSDEF})
 rosbuild_add_executable(coax_repeat src/coax_repeat.cpp)
-target_link_libraries(coax_repeat sbcom pthread rt)
-
-rosbuild_add_executable(coax_server_sim src/coax_server_sim.cpp)
-target_link_libraries(coax_server_sim sbcom pthread rt)
-
-
+target_link_libraries(coax_repeat ${LIBDEF})
