@@ -1,6 +1,6 @@
 Installation:
   1. Compile communication module
-    cd communication/build-gumstix
+    mkdir -p communication/build && cd communication/build
     cmake .. && make install
   2. make stacks
     rosmake coax_vision
