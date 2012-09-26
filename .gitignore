@@ -14,3 +14,4 @@ src/coax_vision
 *.o
 
 deploy
+communication/build-gumstix
