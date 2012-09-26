@@ -16,7 +16,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-set(COAXHOME $ENV{HOME}/coax/deploy)
+set(COAXHOME ${PROJECT_SOURCE_DIR}/../deploy)
 set(COAXTARGET linux)
 link_directories(${COAXHOME}/${COAXTARGET}/lib)
 include_directories(${COAXHOME}/${COAXTARGET}/include)
