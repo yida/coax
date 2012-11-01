@@ -1,0 +1,8 @@
+<launch>
+  <arg name="bagname" />
+  <node pkg="rosbag" name="play" type="play" args="$(arg bagname)">
+    <remap from="/camera/image_color_local" to="in"/>
+  </node>
+
+  <node pkg="coax_vision" name="test_opencv" type="test_opencv" output="screen"/>
+</launch>
