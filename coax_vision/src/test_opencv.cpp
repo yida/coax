@@ -16,6 +16,7 @@ class ImageConverter
   image_transport::Subscriber image_sub_;
   image_transport::Publisher image_pub_;
   
+
 public:
   ImageConverter()
     : it_(nh_)
@@ -33,10 +34,9 @@ public:
 
   void imageCb(const sensor_msgs::ImageConstPtr& msg)
   {
-    cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
+      cv_ptr = cv_bridge::toCvCopy(msg, enc::MONO8);
     }
     catch (cv_bridge::Exception& e)
     {
@@ -52,11 +52,13 @@ public:
     
     image_pub_.publish(cv_ptr->toImageMsg());
   }
+private:
+  cv_bridge::CvImagePtr cv_ptr;
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "image_converter");
+  ros::init(argc, argv, "test_opencv");
   ImageConverter ic;
   ros::spin();
   return 0;

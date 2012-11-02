@@ -1,7 +1,10 @@
 <launch>
   <arg name="bagname" />
-  <node pkg="rosbag" name="play" type="play" args="$(arg bagname)">
-    <remap from="/camera/image_color_local" to="in"/>
+  <node pkg="rosbag" 
+        name="play" type="play" 
+        args="/home/yida/bagfiles/2012-03-16-14-55-26.bag"
+        output="screen">
+    <remap from="/image_in" to="in"/>
   </node>
 
   <node pkg="coax_vision" name="test_opencv" type="test_opencv" output="screen"/>
