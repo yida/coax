@@ -1,0 +1,14 @@
+<package>
+  <description brief="coax_base">
+
+     coax_base
+
+  </description>
+  <author>yida zhang</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/coax_base</url>
+
+</package>
+
+
